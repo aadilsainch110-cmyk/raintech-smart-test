@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "272944540244",
+    "project_id": "raintech-smart-test",
+    "storage_bucket": "raintech-smart-test.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:272944540244:android:72b144228bd86d7e859bc1",
+        "android_client_info": {
+          "package_name": "com.example.raintech_smart_test"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB_crXXVMzWRLWsid2XsGex2jbws2Wjg7g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

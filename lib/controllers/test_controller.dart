@@ -1,0 +1,350 @@
+import 'package:get/get.dart';
+import '../models/test_model.dart';
+import '../services/firestore_service.dart';
+import 'result_controller.dart';
+
+// ignore_for_file: use_null_aware_elements, avoid_print
+
+class TestController extends GetxController {
+  final FirestoreService _firestoreService = FirestoreService();
+
+  final RxList<TestModel> tests = <TestModel>[].obs;
+  final RxBool isLoading = false.obs;
+  final RxString errorMessage = ''.obs;
+
+  Future<void> fetchAllTests() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final snapshot = await _firestoreService.getCollection(
+        collectionPath: 'tests',
+      );
+
+      tests.value = snapshot.docs.map((doc) {
+        return TestModel.fromJson(
+          doc.data() as Map<String, dynamic>,
+          id: doc.id,
+        );
+      }).toList();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchPublishedTests() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'tests',
+        field: 'status',
+        value: 'published',
+      );
+
+      final snapshot = await query.get();
+
+      tests.value = snapshot.docs.map((doc) {
+        return TestModel.fromJson(
+          doc.data() as Map<String, dynamic>,
+          id: doc.id,
+        );
+      }).toList();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchTestsByCourse({required String courseId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'tests',
+        field: 'courseId',
+        value: courseId,
+      );
+
+      final snapshot = await query.get();
+
+      tests.value = snapshot.docs.map((doc) {
+        return TestModel.fromJson(
+          doc.data() as Map<String, dynamic>,
+          id: doc.id,
+        );
+      }).toList();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<void> fetchTestsByTeacher({required String teacherId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'tests',
+        field: 'createdBy',
+        value: teacherId,
+      );
+
+      final snapshot = await query.get();
+
+      tests.value = snapshot.docs.map((doc) {
+        return TestModel.fromJson(
+          doc.data() as Map<String, dynamic>,
+          id: doc.id,
+        );
+      }).toList();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> createTest({
+    required String title,
+    String? description,
+    required String courseId,
+    String? classId,
+    required String shiftId,
+    required int durationMinutes,
+    required int totalMarks,
+    required int passingMarks,
+    required String createdBy,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    print('DEBUG: TestController.createTest called');
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+      print(
+        'DEBUG: Validation check - passingMarks: $passingMarks, totalMarks: $totalMarks',
+      );
+
+      if (passingMarks > totalMarks) {
+        errorMessage.value = 'Passing marks cannot be greater than total marks';
+        print('DEBUG: Validation failed - passing marks > total marks');
+        return false;
+      }
+      print('DEBUG: Validation passed');
+
+      final test = TestModel(
+        title: title,
+        description: description,
+        courseId: courseId,
+        classId: classId,
+        shiftId: shiftId,
+        durationMinutes: durationMinutes,
+        totalMarks: totalMarks,
+        passingMarks: passingMarks,
+        status: 'draft',
+        createdBy: createdBy,
+        questionCount: 0,
+        startDate: startDate,
+        endDate: endDate,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        resultsReleased: false,
+      );
+      print('DEBUG: TestModel created: ${test.toJson()}');
+
+      print('DEBUG: Adding document to Firestore collection: tests');
+      await _firestoreService.addDocument(
+        collectionPath: 'tests',
+        data: test.toJson(),
+      );
+      print('DEBUG: Document added successfully');
+
+      print('DEBUG: Fetching all tests');
+      await fetchAllTests();
+      print('DEBUG: All tests fetched');
+      return true;
+    } catch (e) {
+      print('DEBUG: Error in createTest: $e');
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> updateTest({
+    required String testId,
+    String? title,
+    String? description,
+    String? courseId,
+    String? classId,
+    String? shiftId,
+    int? durationMinutes,
+    int? totalMarks,
+    int? passingMarks,
+    String? status,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? questionCount,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      if (passingMarks != null &&
+          totalMarks != null &&
+          passingMarks > totalMarks) {
+        errorMessage.value = 'Passing marks cannot be greater than total marks';
+        return false;
+      }
+
+      final data = <String, dynamic>{
+        if (title != null) 'title': title,
+        if (description != null) 'description': description,
+        if (courseId != null) 'courseId': courseId,
+        if (classId != null) 'classId': classId,
+        if (shiftId != null) 'shiftId': shiftId,
+        if (durationMinutes != null) 'durationMinutes': durationMinutes,
+        if (totalMarks != null) 'totalMarks': totalMarks,
+        if (passingMarks != null) 'passingMarks': passingMarks,
+        if (status != null) 'status': status,
+        if (startDate != null) 'startDate': startDate.toIso8601String(),
+        if (endDate != null) 'endDate': endDate.toIso8601String(),
+        if (questionCount != null) 'questionCount': questionCount,
+        'updatedAt': DateTime.now().toIso8601String(),
+      };
+
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: data,
+      );
+
+      await fetchAllTests();
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> deleteTest({required String testId, String? teacherId}) async {
+    print('DEBUG: deleteTest called for testId: $testId');
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // Delete all questions associated with this test using batch delete
+      print('DEBUG: Deleting questions for test: $testId');
+      await _firestoreService.deleteDocumentsByQuery(
+        collectionPath: 'questions',
+        field: 'testId',
+        value: testId,
+      );
+
+      // Delete all attempts associated with this test using batch delete
+      print('DEBUG: Deleting attempts for test: $testId');
+      await _firestoreService.deleteDocumentsByQuery(
+        collectionPath: 'attempts',
+        field: 'testId',
+        value: testId,
+      );
+
+      // Delete all results associated with this test using batch delete
+      print('DEBUG: Deleting results for test: $testId');
+      await _firestoreService.deleteDocumentsByQuery(
+        collectionPath: 'results',
+        field: 'testId',
+        value: testId,
+      );
+
+      // Finally, delete the test itself
+      print('DEBUG: Deleting test: $testId');
+      await _firestoreService.deleteDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+      );
+      print('DEBUG: Test deleted successfully');
+
+      // Refresh the appropriate list based on context
+      if (teacherId != null) {
+        await fetchTestsByTeacher(teacherId: teacherId);
+      } else {
+        await fetchAllTests();
+      }
+      return true;
+    } catch (e) {
+      print('DEBUG: Error in deleteTest: $e');
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> publishTest({required String testId}) async {
+    return await updateTest(testId: testId, status: 'published');
+  }
+
+  Future<bool> closeTest({required String testId}) async {
+    return await updateTest(testId: testId, status: 'closed');
+  }
+
+  Future<bool> releaseResults({required String testId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final resultController = Get.put(ResultController());
+
+      // Calculate rankings first
+      await resultController.calculateRankings(testId: testId);
+
+      // Then update test status and mark results as released
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'status': 'results_released',
+          'resultsReleased': true,
+          'resultsReleasedAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Update all results to show position
+      await resultController.fetchTestResults(testId: testId);
+      for (final result in resultController.results) {
+        await resultController.updateResultStatus(
+          resultId: result.id!,
+          showPosition: true,
+        );
+      }
+
+      await fetchAllTests();
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  TestModel? getTestById(String testId) {
+    try {
+      return tests.firstWhere((test) => test.id == testId);
+    } catch (e) {
+      return null;
+    }
+  }
+}
