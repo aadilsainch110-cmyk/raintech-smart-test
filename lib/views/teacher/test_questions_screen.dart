@@ -475,11 +475,25 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
         allowedExtensions: ['csv'],
       );
 
-      if (result != null && result.files.single.path != null) {
-        print('DEBUG: File selected: ${result.files.single.path}');
-        final file = File(result.files.single.path!);
-        final bytes = await file.readAsBytes();
-        final csvData = String.fromCharCodes(bytes);
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.single;
+        String csvData;
+
+        // Handle web (bytes) vs desktop/mobile (path)
+        if (file.bytes != null) {
+          // Web platform - use bytes directly
+          print('DEBUG: Using bytes (web platform)');
+          csvData = String.fromCharCodes(file.bytes!);
+        } else if (file.path != null) {
+          // Desktop/mobile platform - read from file path
+          print('DEBUG: Using path (desktop/mobile): ${file.path}');
+          final fileObj = File(file.path!);
+          final bytes = await fileObj.readAsBytes();
+          csvData = String.fromCharCodes(bytes);
+        } else {
+          throw Exception('Unable to read file - no path or bytes available');
+        }
+
         print('DEBUG: CSV data read, length: ${csvData.length}');
 
         final rows = const CsvToListConverter().convert(csvData);

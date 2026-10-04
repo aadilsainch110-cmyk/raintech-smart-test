@@ -1,6 +1,7 @@
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:intl/intl.dart';
 
 class CsvService {
@@ -183,9 +184,16 @@ class CsvService {
       );
 
       if (resultPath != null) {
-        final file = File(resultPath);
-        await file.writeAsString(csvString);
-        return resultPath;
+        if (kIsWeb) {
+          // On web, FilePicker.saveFile returns the path but we can't write to it
+          // The file is already saved by the browser's download mechanism
+          return resultPath;
+        } else {
+          // On desktop/mobile, write to the file
+          final file = File(resultPath);
+          await file.writeAsString(csvString);
+          return resultPath;
+        }
       }
 
       return null;
@@ -232,9 +240,16 @@ class CsvService {
       );
 
       if (resultPath != null) {
-        final file = File(resultPath);
-        await file.writeAsString(csvString);
-        return resultPath;
+        if (kIsWeb) {
+          // On web, FilePicker.saveFile returns the path but we can't write to it
+          // The file is already saved by the browser's download mechanism
+          return resultPath;
+        } else {
+          // On desktop/mobile, write to the file
+          final file = File(resultPath);
+          await file.writeAsString(csvString);
+          return resultPath;
+        }
       }
 
       return null;
