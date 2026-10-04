@@ -74,9 +74,9 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                 padding: ResponsiveUtils.responsivePadding(context),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: ResponsiveUtils.getGridColumns(context),
-                  childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.1 : 1.3,
-                  crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
-                  mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
+                  childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.1 : 1.2,
+                  crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+                  mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
                 ),
                 itemCount: _resultController.results.length,
                 itemBuilder: (context, index) {
@@ -84,7 +84,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                   return Card(
                     child: Padding(
                       padding: EdgeInsets.all(
-                        ResponsiveUtils.responsiveSpacing(context, 16),
+                        ResponsiveUtils.responsiveSpacing(context, 12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,7 +98,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                                   fontSize:
                                       ResponsiveUtils.responsiveFontSize(
                                         context,
-                                        16,
+                                        15,
                                       ),
                                     fontWeight: FontWeight.bold,
                                 ),
@@ -107,11 +107,11 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                                 padding: EdgeInsets.symmetric(
                                   horizontal: ResponsiveUtils.responsiveSpacing(
                                     context,
-                                    8,
+                                    6,
                                   ),
                                   vertical: ResponsiveUtils.responsiveSpacing(
                                     context,
-                                    4,
+                                    3,
                                   ),
                                 ),
                                 decoration: BoxDecoration(
@@ -121,7 +121,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                                   borderRadius: BorderRadius.circular(
                                     ResponsiveUtils.responsiveBorderRadius(
                                       context,
-                                      8,
+                                      6,
                                     ),
                                   ),
                                 ),
@@ -130,7 +130,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 10,
+                                    fontSize: 9,
                                   ),
                                 ),
                               ),
@@ -142,7 +142,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(
                                 context,
-                                20,
+                                18,
                               ),
                               fontWeight: FontWeight.bold,
                               color: theme.AppTheme.primaryColor,
@@ -151,7 +151,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                           SizedBox(
                             height: ResponsiveUtils.responsiveSpacing(
                               context,
-                              8,
+                              6,
                             ),
                           ),
                           Text(
@@ -159,7 +159,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(
                                 context,
-                                14,
+                                13,
                               ),
                               color: theme.AppTheme.textSecondary,
                             ),
@@ -167,7 +167,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                           SizedBox(
                             height: ResponsiveUtils.responsiveSpacing(
                               context,
-                              8,
+                              6,
                             ),
                           ),
                           Text(
@@ -175,7 +175,7 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(
                                 context,
-                                12,
+                                11,
                               ),
                               color: theme.AppTheme.textSecondary,
                             ),
@@ -183,23 +183,23 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                           const Spacer(),
                           SizedBox(
                             width: double.infinity,
-                            height: ResponsiveUtils.responsiveButtonHeight(context) * 0.7,
+                            height: ResponsiveUtils.responsiveButtonHeight(context) * 0.65,
                             child: ElevatedButton.icon(
                               onPressed: () =>
                                   _pdfService.generateResultPDF(result),
-                              icon: const Icon(Icons.download, size: 16),
-                              label: const Text('PDF', style: TextStyle(fontSize: 12)),
+                              icon: const Icon(Icons.download, size: 14),
+                              label: const Text('PDF', style: TextStyle(fontSize: 11)),
                               style: ElevatedButton.styleFrom(
                                 padding: EdgeInsets.symmetric(
                                   horizontal:
                                       ResponsiveUtils.responsiveSpacing(
                                         context,
-                                        8,
+                                        6,
                                       ),
                                   vertical:
                                       ResponsiveUtils.responsiveSpacing(
                                         context,
-                                        8,
+                                        6,
                                       ),
                                 ),
                               ),

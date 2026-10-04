@@ -61,9 +61,9 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
             padding: ResponsiveUtils.responsivePadding(context),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: ResponsiveUtils.getGridColumns(context),
-              childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.1 : 1.3,
-              crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
-              mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
+              childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.1 : 1.2,
+              crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+              mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
             ),
             itemCount: controller.tests.length,
             itemBuilder: (context, index) {
@@ -77,14 +77,14 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(
-                    ResponsiveUtils.responsiveSpacing(context, 20),
+                    ResponsiveUtils.responsiveSpacing(context, 14),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                           Container(
                             padding: EdgeInsets.all(
-                              ResponsiveUtils.responsiveSpacing(context, 12),
+                              ResponsiveUtils.responsiveSpacing(context, 10),
                             ),
                             decoration: BoxDecoration(
                               gradient: theme.AppTheme.primaryGradient,
@@ -95,25 +95,25 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
                             child: Icon(
                               Icons.quiz,
                               color: Colors.white,
-                              size: ResponsiveUtils.responsiveIconSize(context, 32),
+                              size: ResponsiveUtils.responsiveIconSize(context, 28),
                             ),
                           ),
-                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
                           Text(
                             test.title,
                             style: TextStyle(
-                              fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+                              fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
                               fontWeight: FontWeight.bold,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (test.description != null) ...[
-                            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+                            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 6)),
                             Text(
                               test.description!,
                               style: TextStyle(
-                                fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                                fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
                                 color: theme.AppTheme.textSecondary,
                               ),
                               maxLines: 2,
@@ -121,29 +121,29 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
                             ),
                           ],
                           const Spacer(),
-                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
                           Wrap(
-                            spacing: ResponsiveUtils.responsiveSpacing(context, 8),
-                            runSpacing: ResponsiveUtils.responsiveSpacing(context, 8),
+                            spacing: ResponsiveUtils.responsiveSpacing(context, 6),
+                            runSpacing: ResponsiveUtils.responsiveSpacing(context, 6),
                             children: [
                               _buildInfoChip(
                                 Icons.help_outline,
-                                '${test.questionCount} Questions',
+                                '${test.questionCount} Q',
                               ),
                               _buildInfoChip(
                                 Icons.access_time,
-                                '${test.durationMinutes} min',
+                                '${test.durationMinutes}m',
                               ),
                               _buildInfoChip(
                                 Icons.star_outline,
-                                '${test.totalMarks} Marks',
+                                '${test.totalMarks} M',
                               ),
                             ],
                           ),
-                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
                           SizedBox(
                             width: double.infinity,
-                            height: ResponsiveUtils.responsiveButtonHeight(context),
+                            height: ResponsiveUtils.responsiveButtonHeight(context) * 0.75,
                             child: ElevatedButton(
                               onPressed: () {
                                 Get.toNamed(Routes.TEST_SCREEN, arguments: test);
@@ -158,7 +158,7 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
                               child: Text(
                                 'Start Test',
                                 style: TextStyle(
-                                  fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                                  fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
                                 ),
                               ),
                             ),

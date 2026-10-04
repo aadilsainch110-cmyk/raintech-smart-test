@@ -350,28 +350,28 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         child: Card(
           child: Padding(
             padding: EdgeInsets.all(
-              ResponsiveUtils.responsiveSpacing(context, 16),
+              ResponsiveUtils.responsiveSpacing(context, 12),
             ),
             child: Column(
               children: [
                 Icon(
                   icon,
-                  size: ResponsiveUtils.responsiveIconSize(context, 32),
+                  size: ResponsiveUtils.responsiveIconSize(context, 28),
                   color: color,
                 ),
-                SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+                SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 6)),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
+                    fontSize: ResponsiveUtils.responsiveFontSize(context, 20),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 4)),
+                SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 3)),
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                    fontSize: ResponsiveUtils.responsiveFontSize(context, 11),
                     color: AppTheme.textSecondary,
                   ),
                 ),
