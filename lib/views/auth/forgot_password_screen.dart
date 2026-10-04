@@ -67,7 +67,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               padding: ResponsiveUtils.responsivePadding(context),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: 500,
+                  maxWidth: ResponsiveUtils.getMaxWidth(context),
                 ),
                 child: Form(
                   key: _formKey,

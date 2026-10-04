@@ -60,8 +60,8 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
           return GridView.builder(
             padding: ResponsiveUtils.responsivePadding(context),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 4,
-              childAspectRatio: 1.3,
+              crossAxisCount: ResponsiveUtils.getGridColumns(context),
+              childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.1 : 1.3,
               crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
               mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
             ),

@@ -46,7 +46,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AdaptiveScaffold(
       appBar: AppBar(
         title: const Text('RAINTECH'),
         elevation: 0,
@@ -71,66 +71,163 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         ],
       ),
       body: _buildBody(),
-      bottomNavigationBar: AdaptiveNavigation(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-          switch (index) {
-            case 0:
-              break;
-            case 1:
-              Get.toNamed('/student-courses');
-              break;
-            case 2:
-              Get.toNamed(Routes.STUDENT_TESTS);
-              break;
-            case 3:
-              Get.toNamed(Routes.STUDENT_RESULTS);
-              break;
-            case 4:
-              Get.toNamed('/leaderboard');
-              break;
-            case 5:
-              Get.toNamed(Routes.STUDENT_PROFILE);
-              break;
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+      drawer: _buildNavigationDrawer(context),
+      bottomNavigationBar: ResponsiveUtils.isMobile(context)
+          ? _buildBottomNavigationBar()
+          : null,
+    );
+  }
+
+  Widget _buildNavigationDrawer(BuildContext context) {
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              theme.AppTheme.primaryColor,
+              theme.AppTheme.secondaryColor,
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
-            label: 'Courses',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.quiz_outlined),
-            selectedIcon: Icon(Icons.quiz),
-            label: 'Tests',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.assessment_outlined),
-            selectedIcon: Icon(Icons.assessment),
-            label: 'Results',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.emoji_events_outlined),
-            selectedIcon: Icon(Icons.emoji_events),
-            label: 'Leaderboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outlined),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.AppTheme.primaryColor,
+                    theme.AppTheme.secondaryColor,
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.school, color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'RainTech',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Obx(
+                    () => Text(
+                      _authController.currentUser?.name ?? 'Student',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildDrawerItem(Icons.home, 'Home', 0),
+            _buildDrawerItem(Icons.menu_book, 'Courses', 1),
+            _buildDrawerItem(Icons.quiz, 'Tests', 2),
+            _buildDrawerItem(Icons.assessment, 'Results', 3),
+            _buildDrawerItem(Icons.emoji_events, 'Leaderboard', 4),
+            _buildDrawerItem(Icons.person, 'Profile', 5),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildDrawerItem(IconData icon, String label, int index) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        label,
+        style: const TextStyle(color: Colors.white),
+      ),
+      selected: _selectedIndex == index,
+      selectedTileColor: Colors.white.withValues(alpha: 0.2),
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+        _handleNavigation(index);
+        if (ResponsiveUtils.isMobile(context)) {
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return NavigationBar(
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+        _handleNavigation(index);
+      },
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home),
+          label: 'Home',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
+          label: 'Courses',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.quiz_outlined),
+          selectedIcon: Icon(Icons.quiz),
+          label: 'Tests',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.assessment_outlined),
+          selectedIcon: Icon(Icons.assessment),
+          label: 'Results',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.emoji_events_outlined),
+          selectedIcon: Icon(Icons.emoji_events),
+          label: 'Leaderboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outlined),
+          selectedIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
+  void _handleNavigation(int index) {
+    switch (index) {
+      case 0:
+        break;
+      case 1:
+        Get.toNamed('/student-courses');
+        break;
+      case 2:
+        Get.toNamed(Routes.STUDENT_TESTS);
+        break;
+      case 3:
+        Get.toNamed(Routes.STUDENT_RESULTS);
+        break;
+      case 4:
+        Get.toNamed('/leaderboard');
+        break;
+      case 5:
+        Get.toNamed(Routes.STUDENT_PROFILE);
+        break;
+    }
   }
 
   Widget _buildBody() {
@@ -154,7 +251,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.AppTheme.primaryColor.withOpacity(0.3),
+                    color: theme.AppTheme.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -189,7 +286,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       vertical: ResponsiveUtils.responsiveSpacing(context, 8),
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(
                         ResponsiveUtils.responsiveBorderRadius(context, 20),
                       ),
@@ -208,7 +305,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         Text(
                           'Student Dashboard',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: ResponsiveUtils.responsiveFontSize(
                               context,
                               14,
@@ -363,15 +460,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    theme.AppTheme.primaryColor.withOpacity(0.1),
-                    theme.AppTheme.secondaryColor.withOpacity(0.1),
+                    theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+                    theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(
                   ResponsiveUtils.responsiveBorderRadius(context, 16),
                 ),
                 border: Border.all(
-                  color: theme.AppTheme.primaryColor.withOpacity(0.2),
+                  color: theme.AppTheme.primaryColor.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),
@@ -388,7 +485,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         ResponsiveUtils.responsiveSpacing(context, 12),
                       ),
                       decoration: BoxDecoration(
-                        color: theme.AppTheme.primaryColor.withOpacity(0.2),
+                        color: theme.AppTheme.primaryColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(
                           ResponsiveUtils.responsiveBorderRadius(context, 12),
                         ),
@@ -427,7 +524,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         vertical: ResponsiveUtils.responsiveSpacing(context, 6),
                       ),
                       decoration: BoxDecoration(
-                        color: theme.AppTheme.successColor.withOpacity(0.1),
+                        color: theme.AppTheme.successColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(
                           ResponsiveUtils.responsiveBorderRadius(context, 8),
                         ),
@@ -484,7 +581,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -505,8 +602,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          theme.AppTheme.primaryColor.withOpacity(0.1),
-                          theme.AppTheme.secondaryColor.withOpacity(0.1),
+                          theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+                          theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(
@@ -631,7 +728,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -652,8 +749,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          theme.AppTheme.accentColor.withOpacity(0.1),
-                          theme.AppTheme.primaryColor.withOpacity(0.1),
+                          theme.AppTheme.accentColor.withValues(alpha: 0.1),
+                          theme.AppTheme.primaryColor.withValues(alpha: 0.1),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(
@@ -798,7 +895,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               Icon(
                 Icons.inbox_outlined,
                 size: ResponsiveUtils.responsiveIconSize(context, 64),
-                color: theme.AppTheme.textSecondary.withOpacity(0.5),
+                color: theme.AppTheme.textSecondary.withValues(alpha: 0.5),
               ),
               SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
               Text(

@@ -1,5 +1,5 @@
 name: raintech_smart_test
-description: "RainTech Smart Test - Desktop-optimized examination platform for laptop/desktop use only."
+description: "RainTech Smart Test - Online examination platform for students and teachers. Supports mobile, tablet, and desktop devices."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

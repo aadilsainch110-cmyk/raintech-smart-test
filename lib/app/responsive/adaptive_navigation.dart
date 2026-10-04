@@ -21,8 +21,21 @@ class AdaptiveNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Desktop-only: always use NavigationRail
-    return _buildNavigationRail(context);
+    // Mobile: BottomNavigationBar, Desktop: NavigationRail
+    if (ResponsiveUtils.isMobile(context)) {
+      return _buildBottomNavigationBar(context);
+    } else {
+      return _buildNavigationRail(context);
+    }
+  }
+
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return NavigationBar(
+      selectedIndex: selectedIndex,
+      onDestinationSelected: onDestinationSelected,
+      backgroundColor: backgroundColor,
+      destinations: destinations,
+    );
   }
 
   Widget _buildNavigationRail(BuildContext context) {
@@ -87,8 +100,26 @@ class AdaptiveScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Desktop-only: always use desktop scaffold
-    return _buildDesktopScaffold(context);
+    // Mobile: standard scaffold, Desktop: scaffold with sidebar
+    if (ResponsiveUtils.isMobile(context)) {
+      return _buildMobileScaffold(context);
+    } else {
+      return _buildDesktopScaffold(context);
+    }
+  }
+
+  Widget _buildMobileScaffold(BuildContext context) {
+    return Scaffold(
+      appBar: appBar,
+      body: body,
+      floatingActionButton: floatingActionButton,
+      bottomNavigationBar: bottomNavigationBar,
+      drawer: drawer,
+      endDrawer: endDrawer,
+      backgroundColor: backgroundColor,
+      extendBody: extendBody,
+      extendBodyBehindAppBar: extendBodyBehindAppBar,
+    );
   }
 
   Widget _buildDesktopScaffold(BuildContext context) {
@@ -166,7 +197,7 @@ class AdaptiveAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Desktop-only: always use desktop app bar style
+    // Mobile: centered title, Desktop: left-aligned title
     return AppBar(
       title: Text(
         title,
@@ -177,7 +208,7 @@ class AdaptiveAppBar extends StatelessWidget {
       actions: actions,
       automaticallyImplyLeading: automaticallyImplyLeading,
       leading: leading,
-      centerTitle: false,
+      centerTitle: ResponsiveUtils.isMobile(context),
     );
   }
 }

@@ -102,7 +102,7 @@ class _SignupScreenState extends State<SignupScreen> {
               padding: ResponsiveUtils.responsivePadding(context),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: 700,
+                  maxWidth: ResponsiveUtils.getMaxWidth(context),
                 ),
                 child: Form(
                   key: _formKey,

@@ -96,8 +96,8 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.4,
+        crossAxisCount: ResponsiveUtils.getGridColumns(context),
+        childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.4,
         crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
         mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
       ),
@@ -187,8 +187,8 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.4,
+        crossAxisCount: ResponsiveUtils.getGridColumns(context),
+        childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.4,
         crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
         mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
       ),

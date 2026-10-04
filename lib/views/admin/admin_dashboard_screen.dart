@@ -8,6 +8,7 @@ import '../../controllers/student_controller.dart';
 import '../../controllers/teacher_controller.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/responsive/responsive_utils.dart';
+import '../../app/responsive/adaptive_navigation.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -42,7 +43,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AdaptiveScaffold(
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         actions: [
@@ -73,12 +74,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
               Obx(
                 () => GridView.count(
-                  crossAxisCount: 4,
+                  crossAxisCount: ResponsiveUtils.getGridColumns(context),
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
                   crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
-                  childAspectRatio: 1.5,
+                  childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.5,
                   children: [
                     _buildStatCard(
                       'Users',
@@ -173,6 +174,138 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ),
       ),
+      drawer: _buildNavigationDrawer(context),
+      bottomNavigationBar: ResponsiveUtils.isMobile(context)
+          ? _buildBottomNavigationBar()
+          : null,
+    );
+  }
+
+  Widget _buildNavigationDrawer(BuildContext context) {
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.secondaryColor,
+            ],
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.secondaryColor,
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.admin_panel_settings, color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Admin Portal',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Obx(
+                    () => Text(
+                      _authController.currentUser?.name ?? 'Admin',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildDrawerItem(Icons.dashboard, 'Dashboard', 0),
+            _buildDrawerItem(Icons.people, 'Users', 1),
+            _buildDrawerItem(Icons.menu_book, 'Courses', 2),
+            _buildDrawerItem(Icons.class_, 'Classes', 3),
+            _buildDrawerItem(Icons.access_time, 'Shifts', 4),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(IconData icon, String label, int index) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        label,
+        style: const TextStyle(color: Colors.white),
+      ),
+      onTap: () {
+        if (ResponsiveUtils.isMobile(context)) {
+          Navigator.pop(context);
+        }
+        // Handle navigation based on index
+        switch (index) {
+          case 0:
+            break;
+          case 1:
+            _showUsersDialog();
+            break;
+          case 2:
+            Get.toNamed('/courses-management');
+            break;
+          case 3:
+            Get.toNamed('/classes-management');
+            break;
+          case 4:
+            Get.toNamed('/shifts-management');
+            break;
+        }
+      },
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return NavigationBar(
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.people_outlined),
+          selectedIcon: Icon(Icons.people),
+          label: 'Users',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
+          label: 'Courses',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.class_outlined),
+          selectedIcon: Icon(Icons.class_),
+          label: 'Classes',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.access_time_outlined),
+          selectedIcon: Icon(Icons.access_time),
+          label: 'Shifts',
+        ),
+      ],
     );
   }
 

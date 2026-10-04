@@ -15,8 +15,13 @@ class AdaptiveLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Desktop-only: always use desktop if available, otherwise mobile
-    return desktop ?? mobile;
+    // Use appropriate layout based on screen size
+    if (ResponsiveUtils.isDesktop(context) && desktop != null) {
+      return desktop!;
+    } else if (ResponsiveUtils.isTablet(context) && tablet != null) {
+      return tablet!;
+    }
+    return mobile;
   }
 }
 
@@ -42,8 +47,13 @@ class AdaptiveGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Desktop-only: use desktop columns or default to 4
-    final columns = desktopColumns ?? 4;
+    // Use appropriate columns based on screen size
+    final columns = ResponsiveUtils.responsiveValue(
+      context: context,
+      mobile: mobileColumns ?? 1,
+      tablet: tabletColumns ?? 2,
+      desktop: desktopColumns ?? 4,
+    );
 
     return GridView.count(
       crossAxisCount: columns,

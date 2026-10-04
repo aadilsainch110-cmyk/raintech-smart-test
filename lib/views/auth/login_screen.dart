@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: ResponsiveUtils.responsivePadding(context),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: 600,
+                  maxWidth: ResponsiveUtils.getMaxWidth(context),
                 ),
                 child: Form(
                   key: _formKey,

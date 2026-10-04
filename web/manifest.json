@@ -5,7 +5,8 @@
     "display": "standalone",
     "background_color": "#2563EB",
     "theme_color": "#2563EB",
-    "description": "Desktop-optimized examination platform for students and teachers.",
+    "description": "Online examination platform for students and teachers.",
+    "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
