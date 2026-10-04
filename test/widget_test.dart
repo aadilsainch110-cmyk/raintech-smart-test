@@ -1,30 +1,45 @@
-// This is a basic Flutter widget test.
+// Basic widget test for RainTech Smart Test App
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// This test verifies that the app's theme configuration is correct.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:raintech_smart_test/main.dart';
+import 'package:raintech_smart_test/app/theme/app_theme.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('App theme has correct primary color', (WidgetTester tester) async {
+    // Build a simple widget with the app theme
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(
+          body: Center(
+            child: Text('Test'),
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify the theme is applied
+    final theme = tester.widget<MaterialApp>(find.byType(MaterialApp)).theme;
+    expect(theme?.primaryColor, AppTheme.primaryColor);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('App theme has correct background color', (WidgetTester tester) async {
+    // Build a simple widget with the app theme
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: const Scaffold(
+          body: Center(
+            child: Text('Test'),
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify the theme is applied
+    final theme = tester.widget<MaterialApp>(find.byType(MaterialApp)).theme;
+    expect(theme?.scaffoldBackgroundColor, AppTheme.backgroundColor);
   });
 }

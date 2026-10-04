@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/course_controller.dart';
 import '../../models/course_model.dart';
 import '../../app/theme/app_theme.dart';
+import '../../app/responsive/responsive_utils.dart';
 
 class CoursesManagementScreen extends StatefulWidget {
   const CoursesManagementScreen({super.key});
@@ -51,70 +52,102 @@ class _CoursesManagementScreenState extends State<CoursesManagementScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.menu_book, size: 64, color: AppTheme.textSecondary),
-          const SizedBox(height: 16),
-          const Text(
-            'No courses yet',
-            style: TextStyle(fontSize: 18, color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _showAddCourseDialog,
-            icon: const Icon(Icons.add),
-            label: const Text('Add First Course'),
-          ),
-        ],
+    return Builder(
+      builder: (context) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.menu_book,
+              size: ResponsiveUtils.responsiveIconSize(context, 64),
+              color: AppTheme.textSecondary,
+            ),
+            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+            Text(
+              'No courses yet',
+              style: TextStyle(
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+            ElevatedButton.icon(
+              onPressed: _showAddCourseDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('Add First Course'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.responsiveSpacing(context, 24),
+                  vertical: ResponsiveUtils.responsiveSpacing(context, 12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildCoursesList() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _courseController.courses.length,
-      itemBuilder: (context, index) {
-        final course = _courseController.courses[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(
-              course.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+    return Builder(
+      builder: (context) => ListView.builder(
+        padding: ResponsiveUtils.responsivePadding(context),
+        itemCount: _courseController.courses.length,
+        itemBuilder: (context, index) {
+          final course = _courseController.courses[index];
+          return Card(
+            margin: EdgeInsets.only(
+              bottom: ResponsiveUtils.responsiveSpacing(context, 12),
             ),
-            subtitle: course.description != null
-                ? Text(course.description!)
-                : null,
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Switch(
-                  value: course.isActive,
-                  onChanged: (value) async {
-                    await _courseController.updateCourse(
-                      courseId: course.id!,
-                      name: course.name,
-                      isActive: value,
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _showEditCourseDialog(course),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  color: AppTheme.errorColor,
-                  onPressed: () => _showDeleteDialog(course),
-                ),
-              ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(
+                ResponsiveUtils.responsiveBorderRadius(context, 12),
+              ),
             ),
-          ),
-        );
-      },
+            child: ListTile(
+              title: Text(
+                course.name,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                ),
+              ),
+              subtitle: course.description != null
+                  ? Text(
+                      course.description!,
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    )
+                  : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Switch(
+                    value: course.isActive,
+                    onChanged: (value) async {
+                      await _courseController.updateCourse(
+                        courseId: course.id!,
+                        name: course.name,
+                        isActive: value,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showEditCourseDialog(course),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    color: AppTheme.errorColor,
+                    onPressed: () => _showDeleteDialog(course),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -125,26 +158,28 @@ class _CoursesManagementScreenState extends State<CoursesManagementScreen> {
     Get.dialog(
       AlertDialog(
         title: const Text('Add Course'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Course Name',
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Course Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
@@ -193,26 +228,28 @@ class _CoursesManagementScreenState extends State<CoursesManagementScreen> {
     Get.dialog(
       AlertDialog(
         title: const Text('Edit Course'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Course Name',
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Course Name',
+                  border: OutlineInputBorder(),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descriptionController,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
               ),
-              maxLines: 3,
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),

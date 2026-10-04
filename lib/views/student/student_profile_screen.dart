@@ -29,7 +29,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile')),
+      appBar: AppBar(
+        title: const Text('My Profile'),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () => Get.toNamed('/settings'),
+          ),
+        ],
+      ),
       body: Obx(
         () => authController.currentUser == null
             ? const Center(child: CircularProgressIndicator())
@@ -38,55 +47,75 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: CircleAvatar(
-                        radius: ResponsiveUtils.responsiveSpacing(context, 50),
-                        backgroundColor: theme.AppTheme.primaryColor,
-                        child: Text(
-                          authController.currentUser!.name[0].toUpperCase(),
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.responsiveFontSize(
-                              context,
-                              32,
-                            ),
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                    // Profile Header
+                    Container(
+                      padding: EdgeInsets.all(
+                        ResponsiveUtils.responsiveSpacing(context, 24),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: theme.AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 24),
                         ),
+                      ),
+                      child: Column(
+                        children: [
+                          Center(
+                            child: CircleAvatar(
+                              radius: ResponsiveUtils.responsiveSpacing(context, 50),
+                              backgroundColor: Colors.white.withValues(alpha:0.2),
+                              child: Text(
+                                authController.currentUser!.name[0].toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: ResponsiveUtils.responsiveFontSize(
+                                    context,
+                                    32,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: ResponsiveUtils.responsiveSpacing(context, 16),
+                          ),
+                          Center(
+                            child: Text(
+                              authController.currentUser!.name,
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.responsiveFontSize(
+                                  context,
+                                  24,
+                                ),
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: ResponsiveUtils.responsiveSpacing(context, 8),
+                          ),
+                          Center(
+                            child: Chip(
+                              label: Text(
+                                authController.currentUser!.role.toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              backgroundColor: Colors.white.withValues(alpha:0.2),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(
                       height: ResponsiveUtils.responsiveSpacing(context, 24),
                     ),
-                    Center(
-                      child: Text(
-                        authController.currentUser!.name,
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.responsiveFontSize(
-                            context,
-                            24,
-                          ),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: ResponsiveUtils.responsiveSpacing(context, 8),
-                    ),
-                    Center(
-                      child: Chip(
-                        label: Text(
-                          authController.currentUser!.role.toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        backgroundColor: theme.AppTheme.primaryColor.withValues(
-                          alpha: 0.1,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: ResponsiveUtils.responsiveSpacing(context, 32),
-                    ),
+                    
+                    // Profile Information
                     _buildProfileField(
                       'Email',
                       authController.currentUser!.email,
@@ -135,21 +164,20 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     SizedBox(
                       height: ResponsiveUtils.responsiveSpacing(context, 32),
                     ),
+                    
+                    // Action Buttons
                     SizedBox(
                       width: double.infinity,
+                      height: ResponsiveUtils.responsiveButtonHeight(context),
                       child: ElevatedButton.icon(
                         onPressed: _showEditProfileDialog,
                         icon: const Icon(Icons.edit),
                         label: const Text('Edit Profile'),
                         style: ElevatedButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveUtils.responsiveSpacing(
-                              context,
-                              24,
-                            ),
-                            vertical: ResponsiveUtils.responsiveSpacing(
-                              context,
-                              16,
+                          backgroundColor: theme.AppTheme.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.responsiveBorderRadius(context, 12),
                             ),
                           ),
                         ),
@@ -160,6 +188,45 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                     ),
                     SizedBox(
                       width: double.infinity,
+                      height: ResponsiveUtils.responsiveButtonHeight(context),
+                      child: OutlinedButton.icon(
+                        onPressed: () => Get.toNamed('/settings'),
+                        icon: const Icon(Icons.settings),
+                        label: const Text('Settings'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.responsiveBorderRadius(context, 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: ResponsiveUtils.responsiveSpacing(context, 12),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: ResponsiveUtils.responsiveButtonHeight(context),
+                      child: OutlinedButton.icon(
+                        onPressed: () => Get.toNamed('/help'),
+                        icon: const Icon(Icons.help),
+                        label: const Text('Help & Support'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.responsiveBorderRadius(context, 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: ResponsiveUtils.responsiveSpacing(context, 24),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: ResponsiveUtils.responsiveButtonHeight(context),
                       child: ElevatedButton.icon(
                         onPressed: () {
                           authController.signOut();
@@ -168,8 +235,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         label: const Text('Logout'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: theme.AppTheme.errorColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.responsiveBorderRadius(context, 12),
+                            ),
+                          ),
                         ),
                       ),
+                    ),
+                    SizedBox(
+                      height: ResponsiveUtils.responsiveSpacing(context, 32),
                     ),
                   ],
                 ),
@@ -179,20 +254,42 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   }
 
   Widget _buildProfileField(String label, String value, IconData icon) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: Icon(icon, color: theme.AppTheme.primaryColor),
-        title: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: theme.AppTheme.textSecondary,
-          ),
+    return Builder(
+      builder: (context) => Card(
+        margin: EdgeInsets.only(
+          bottom: ResponsiveUtils.responsiveSpacing(context, 12),
         ),
-        subtitle: Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        child: ListTile(
+          leading: Container(
+            padding: EdgeInsets.all(
+              ResponsiveUtils.responsiveSpacing(context, 12),
+            ),
+            decoration: BoxDecoration(
+              color: theme.AppTheme.primaryColor.withValues(alpha:0.1),
+              borderRadius: BorderRadius.circular(
+                ResponsiveUtils.responsiveBorderRadius(context, 12),
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: theme.AppTheme.primaryColor,
+              size: ResponsiveUtils.responsiveIconSize(context, 24),
+            ),
+          ),
+          title: Text(
+            label,
+            style: TextStyle(
+              fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+              color: theme.AppTheme.textSecondary,
+            ),
+          ),
+          subtitle: Text(
+            value,
+            style: TextStyle(
+              fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );

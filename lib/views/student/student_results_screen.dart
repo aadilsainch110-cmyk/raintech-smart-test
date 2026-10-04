@@ -70,15 +70,18 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                   ],
                 ),
               )
-            : ListView.builder(
+            : GridView.builder(
                 padding: ResponsiveUtils.responsivePadding(context),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.3,
+                  crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
+                  mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
+                ),
                 itemCount: _resultController.results.length,
                 itemBuilder: (context, index) {
                   final result = _resultController.results[index];
                   return Card(
-                    margin: EdgeInsets.only(
-                      bottom: ResponsiveUtils.responsiveSpacing(context, 16),
-                    ),
                     child: Padding(
                       padding: EdgeInsets.all(
                         ResponsiveUtils.responsiveSpacing(context, 16),
@@ -89,28 +92,26 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Expanded(
-                                child: Text(
-                                  'Test ${index + 1}',
-                                  style: TextStyle(
-                                    fontSize:
-                                        ResponsiveUtils.responsiveFontSize(
-                                          context,
-                                          16,
-                                        ),
+                              Text(
+                                'Test ${index + 1}',
+                                style: TextStyle(
+                                  fontSize:
+                                      ResponsiveUtils.responsiveFontSize(
+                                        context,
+                                        16,
+                                      ),
                                     fontWeight: FontWeight.bold,
-                                  ),
                                 ),
                               ),
                               Container(
                                 padding: EdgeInsets.symmetric(
                                   horizontal: ResponsiveUtils.responsiveSpacing(
                                     context,
-                                    12,
+                                    8,
                                   ),
                                   vertical: ResponsiveUtils.responsiveSpacing(
                                     context,
-                                    6,
+                                    4,
                                   ),
                                 ),
                                 decoration: BoxDecoration(
@@ -129,20 +130,32 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                                   style: const TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 12,
+                                    fontSize: 10,
                                   ),
                                 ),
                               ),
                             ],
                           ),
+                          const Spacer(),
+                          Text(
+                            '${result.obtainedMarks}/${result.totalMarks}',
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(
+                                context,
+                                20,
+                              ),
+                              fontWeight: FontWeight.bold,
+                              color: theme.AppTheme.primaryColor,
+                            ),
+                          ),
                           SizedBox(
                             height: ResponsiveUtils.responsiveSpacing(
                               context,
-                              12,
+                              8,
                             ),
                           ),
                           Text(
-                            'Marks: ${result.obtainedMarks}/${result.totalMarks}',
+                            '${result.percentage.toStringAsFixed(1)}%',
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(
                                 context,
@@ -158,62 +171,39 @@ class _StudentResultsScreenState extends State<StudentResultsScreen> {
                             ),
                           ),
                           Text(
-                            'Percentage: ${result.percentage.toStringAsFixed(1)}%',
+                            '✓ ${result.correctAnswers} | ✗ ${result.wrongAnswers}',
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(
                                 context,
-                                14,
+                                12,
                               ),
                               color: theme.AppTheme.textSecondary,
                             ),
                           ),
+                          const Spacer(),
                           SizedBox(
-                            height: ResponsiveUtils.responsiveSpacing(
-                              context,
-                              8,
-                            ),
-                          ),
-                          Text(
-                            'Correct: ${result.correctAnswers} | Wrong: ${result.wrongAnswers}',
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.responsiveFontSize(
-                                context,
-                                14,
-                              ),
-                              color: theme.AppTheme.textSecondary,
-                            ),
-                          ),
-                          SizedBox(
-                            height: ResponsiveUtils.responsiveSpacing(
-                              context,
-                              12,
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () =>
-                                      _pdfService.generateResultPDF(result),
-                                  icon: const Icon(Icons.download),
-                                  label: const Text('Download PDF'),
-                                  style: ElevatedButton.styleFrom(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal:
-                                          ResponsiveUtils.responsiveSpacing(
-                                            context,
-                                            16,
-                                          ),
-                                      vertical:
-                                          ResponsiveUtils.responsiveSpacing(
-                                            context,
-                                            12,
-                                          ),
-                                    ),
-                                  ),
+                            width: double.infinity,
+                            height: ResponsiveUtils.responsiveButtonHeight(context) * 0.7,
+                            child: ElevatedButton.icon(
+                              onPressed: () =>
+                                  _pdfService.generateResultPDF(result),
+                              icon: const Icon(Icons.download, size: 16),
+                              label: const Text('PDF', style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal:
+                                      ResponsiveUtils.responsiveSpacing(
+                                        context,
+                                        8,
+                                      ),
+                                  vertical:
+                                      ResponsiveUtils.responsiveSpacing(
+                                        context,
+                                        8,
+                                      ),
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),

@@ -4,6 +4,7 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/course_controller.dart';
 import '../../controllers/enrollment_controller.dart';
 import '../../app/theme/app_theme.dart' as theme;
+import '../../app/responsive/responsive_utils.dart';
 
 class StudentCoursesScreen extends StatefulWidget {
   const StudentCoursesScreen({super.key});
@@ -48,28 +49,28 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                   _enrollmentController.isLoading.value
               ? const Center(child: CircularProgressIndicator())
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
+                  padding: ResponsiveUtils.responsivePadding(context),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Enrolled Courses',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
                       _buildEnrolledCourses(),
-                      const SizedBox(height: 24),
-                      const Text(
+                      SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
+                      Text(
                         'Available Courses',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
                       _buildAvailableCourses(),
                     ],
                   ),
@@ -91,38 +92,81 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
       return _buildEmptyCard('No courses enrolled yet');
     }
 
-    return ListView.builder(
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.4,
+        crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+        mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+      ),
       itemCount: enrolledCourses.length,
-      itemBuilder: (context, index) {
-        final course = enrolledCourses[index];
-        final enrollment = _enrollmentController.enrollments.firstWhere(
-          (e) => e.courseId == course.id,
+          itemBuilder: (context, index) {
+            final course = enrolledCourses[index];
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.responsiveBorderRadius(context, 12),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(
+                  ResponsiveUtils.responsiveSpacing(context, 16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(
+                        ResponsiveUtils.responsiveSpacing(context, 12),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: theme.AppTheme.primaryGradient,
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 8),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.menu_book,
+                        color: Colors.white,
+                        size: ResponsiveUtils.responsiveIconSize(context, 24),
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+                    Text(
+                      course.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (course.description != null) ...[
+                      SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 4)),
+                      Text(
+                        course.description!,
+                        style: TextStyle(
+                          fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                          color: theme.AppTheme.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const Spacer(),
+                    Chip(
+                      label: const Text('Enrolled'),
+                      backgroundColor: theme.AppTheme.successColor,
+                      labelStyle: const TextStyle(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(
-              course.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (course.description != null) Text(course.description!),
-                Text('Shift: ${enrollment.shiftId}'),
-              ],
-            ),
-            trailing: Chip(
-              label: const Text('Enrolled'),
-              backgroundColor: theme.AppTheme.successColor,
-              labelStyle: const TextStyle(color: Colors.white),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Widget _buildAvailableCourses() {
@@ -139,56 +183,134 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
       return _buildEmptyCard('No new courses available');
     }
 
-    return ListView.builder(
+    return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.4,
+        crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+        mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+      ),
       itemCount: availableCourses.length,
-      itemBuilder: (context, index) {
-        final course = availableCourses[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(
-              course.name,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: course.description != null
-                ? Text(course.description!)
-                : null,
-            trailing: ElevatedButton(
-              onPressed: () async {
-                final success = await _enrollmentController.createEnrollment(
-                  studentId: _authController.currentUser!.id!,
-                  courseId: course.id!,
-                  shiftId: 'default',
-                );
-                if (success) {
-                  Get.snackbar(
-                    'Success',
-                    'Enrolled in ${course.name}',
-                    snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: theme.AppTheme.successColor,
-                    colorText: Colors.white,
-                  );
-                  _loadData();
-                }
-              },
-              child: const Text('Enroll'),
-            ),
-          ),
+          itemBuilder: (context, index) {
+            final course = availableCourses[index];
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.responsiveBorderRadius(context, 12),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(
+                  ResponsiveUtils.responsiveSpacing(context, 16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(
+                        ResponsiveUtils.responsiveSpacing(context, 12),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+                            theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 8),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.menu_book,
+                        color: theme.AppTheme.primaryColor,
+                        size: ResponsiveUtils.responsiveIconSize(context, 24),
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+                    Text(
+                      course.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (course.description != null) ...[
+                      SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 4)),
+                      Text(
+                        course.description!,
+                        style: TextStyle(
+                          fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                          color: theme.AppTheme.textSecondary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const Spacer(),
+                    SizedBox(
+                      width: double.infinity,
+                      height: ResponsiveUtils.responsiveButtonHeight(context) * 0.8,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final success = await _enrollmentController.createEnrollment(
+                            studentId: _authController.currentUser!.id!,
+                            courseId: course.id!,
+                            shiftId: 'default',
+                          );
+                          if (success) {
+                            Get.snackbar(
+                              'Success',
+                              'Enrolled in ${course.name}',
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: theme.AppTheme.successColor,
+                              colorText: Colors.white,
+                            );
+                            _loadData();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              ResponsiveUtils.responsiveBorderRadius(context, 8),
+                            ),
+                          ),
+                        ),
+                        child: const Text('Enroll'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
-      },
-    );
   }
 
   Widget _buildEmptyCard(String message) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            message,
-            style: const TextStyle(color: theme.AppTheme.textSecondary),
+    return Builder(
+      builder: (context) => Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.responsiveBorderRadius(context, 12),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(
+            ResponsiveUtils.responsiveSpacing(context, 24),
+          ),
+          child: Center(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: theme.AppTheme.textSecondary,
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+              ),
+            ),
           ),
         ),
       ),

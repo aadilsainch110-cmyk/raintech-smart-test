@@ -102,7 +102,7 @@ class _SignupScreenState extends State<SignupScreen> {
               padding: ResponsiveUtils.responsivePadding(context),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: ResponsiveUtils.isDesktop(context) ? 700 : double.infinity,
+                  maxWidth: 700,
                 ),
                 child: Form(
                   key: _formKey,
@@ -118,7 +118,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.AppTheme.primaryColor.withOpacity(0.3),
+                              color: theme.AppTheme.primaryColor.withValues(alpha:0.3),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -129,7 +129,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             Container(
                               padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
+                                color: Colors.white.withValues(alpha:0.2),
                                 borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 12)),
                               ),
                               child: Icon(
@@ -153,7 +153,7 @@ class _SignupScreenState extends State<SignupScreen> {
                             'Join RAINTECH Today',
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(context, 13),
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha:0.9),
                             ),
                           ),
                         ],
@@ -222,7 +222,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha:0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -269,7 +269,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha:0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -316,7 +316,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha:0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -373,7 +373,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha:0.05),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -431,7 +431,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.AppTheme.primaryColor.withOpacity(
+                              color: theme.AppTheme.primaryColor.withValues(alpha:
                                 0.3,
                               ),
                               blurRadius: 15,
@@ -506,6 +506,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -524,7 +525,7 @@ class _SignupScreenState extends State<SignupScreen> {
           borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha:0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -541,14 +542,15 @@ class _SignupScreenState extends State<SignupScreen> {
               borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
               borderSide: BorderSide.none,
             ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
-            vertical: ResponsiveUtils.responsiveSpacing(context, 16),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
+              vertical: ResponsiveUtils.responsiveSpacing(context, 16),
+            ),
           ),
+          validator: validator,
         ),
-        validator: validator,
       ),
     );
   }

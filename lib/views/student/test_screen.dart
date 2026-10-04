@@ -226,23 +226,26 @@ class _TestScreenState extends State<TestScreen> {
 
   Widget _buildQuestionHeader(int currentIndex) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
       color: theme.AppTheme.primaryColor,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             'Question ${currentIndex + 1} / ${_questions.length}',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 16,
+              fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
               fontWeight: FontWeight.bold,
             ),
           ),
           Obx(
             () => Text(
               'Answered: ${_examController.answeredCount}/${_questions.length}',
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+              ),
             ),
           ),
         ],
@@ -252,21 +255,24 @@ class _TestScreenState extends State<TestScreen> {
 
   Widget _buildQuestionContent(QuestionModel question) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             question.question,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
           _buildOption('A', question.optionA, question),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
           _buildOption('B', question.optionB, question),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
           _buildOption('C', question.optionC, question),
-          const SizedBox(height: 12),
+          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
           _buildOption('D', question.optionD, question),
         ],
       ),
@@ -277,51 +283,63 @@ class _TestScreenState extends State<TestScreen> {
     return Obx(() {
       final isSelected =
           _examController.getAnswerForQuestion(question.order) == option;
-      return InkWell(
-        onTap: () {
-          _examController.selectAnswer(option);
-        },
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: isSelected ? theme.AppTheme.primaryColor : Colors.grey,
-              width: isSelected ? 2 : 1,
+      return Builder(
+        builder: (context) => InkWell(
+          onTap: () {
+            _examController.selectAnswer(option);
+          },
+          child: Container(
+            padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isSelected ? theme.AppTheme.primaryColor : Colors.grey,
+                width: isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(
+                ResponsiveUtils.responsiveBorderRadius(context, 8),
+              ),
+              color: isSelected
+                  ? theme.AppTheme.primaryColor.withValues(alpha: 0.1)
+                  : Colors.white,
             ),
-            borderRadius: BorderRadius.circular(8),
-            color: isSelected
-                ? theme.AppTheme.primaryColor.withValues(alpha: 0.1)
-                : Colors.white,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
+            child: Row(
+              children: [
+                Container(
+                  width: ResponsiveUtils.responsiveSpacing(context, 32),
+                  height: ResponsiveUtils.responsiveSpacing(context, 32),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? theme.AppTheme.primaryColor
+                          : Colors.grey,
+                    ),
                     color: isSelected
                         ? theme.AppTheme.primaryColor
-                        : Colors.grey,
+                        : Colors.white,
                   ),
-                  color: isSelected
-                      ? theme.AppTheme.primaryColor
-                      : Colors.white,
-                ),
-                child: Center(
-                  child: Text(
-                    option,
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
+                  child: Center(
+                    child: Text(
+                      option,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(child: Text(text, style: const TextStyle(fontSize: 16))),
-            ],
+                SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 16)),
+                Expanded(
+                  child: Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -329,110 +347,163 @@ class _TestScreenState extends State<TestScreen> {
   }
 
   Widget _buildQuestionPalette() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        border: Border(top: BorderSide(color: Colors.grey[300]!)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Question Palette',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(_questions.length, (index) {
-              final question = _questions[index];
-              final isAnswered = _examController.hasAnsweredQuestion(
-                question.order,
-              );
-              final isCurrent =
-                  _examController.currentQuestionIndex.value == index;
+    return Builder(
+      builder: (context) => Container(
+        padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          border: Border(top: BorderSide(color: Colors.grey[300]!)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Question Palette',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+              ),
+            ),
+            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+            Wrap(
+              spacing: ResponsiveUtils.responsiveSpacing(context, 8),
+              runSpacing: ResponsiveUtils.responsiveSpacing(context, 8),
+              children: List.generate(_questions.length, (index) {
+                final question = _questions[index];
+                final isAnswered = _examController.hasAnsweredQuestion(
+                  question.order,
+                );
+                final isCurrent =
+                    _examController.currentQuestionIndex.value == index;
 
-              return InkWell(
-                onTap: () {
-                  _examController.goToQuestion(index);
-                },
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: isCurrent
-                        ? theme.AppTheme.primaryColor
-                        : isAnswered
-                        ? theme.AppTheme.successColor
-                        : Colors.white,
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        color: isCurrent || isAnswered
-                            ? Colors.white
-                            : Colors.black,
-                        fontWeight: FontWeight.bold,
+                return InkWell(
+                  onTap: () {
+                    _examController.goToQuestion(index);
+                  },
+                  child: Container(
+                    width: ResponsiveUtils.responsiveSpacing(context, 40),
+                    height: ResponsiveUtils.responsiveSpacing(context, 40),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                          ? theme.AppTheme.primaryColor
+                          : isAnswered
+                          ? theme.AppTheme.successColor
+                          : Colors.white,
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveUtils.responsiveBorderRadius(context, 8),
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          color: isCurrent || isAnswered
+                              ? Colors.white
+                              : Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            }),
-          ),
-        ],
+                );
+              }),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildNavigationButtons() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[300]!)),
-      ),
-      child: Row(
-        children: [
-          Obx(
-            () => Expanded(
-              child: ElevatedButton(
-                onPressed: _examController.currentQuestionIndex.value > 0
-                    ? _examController.previousQuestion
-                    : null,
-                child: const Text('Previous'),
+    return Builder(
+      builder: (context) => Container(
+        padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey[300]!)),
+        ),
+        child: Row(
+          children: [
+            Obx(
+              () => Expanded(
+                child: SizedBox(
+                  height: ResponsiveUtils.responsiveButtonHeight(context),
+                  child: ElevatedButton(
+                    onPressed: _examController.currentQuestionIndex.value > 0
+                        ? _examController.previousQuestion
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 12),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      'Previous',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Obx(
-            () => Expanded(
-              child: ElevatedButton(
-                onPressed:
-                    _examController.currentQuestionIndex.value <
-                        _questions.length - 1
-                    ? _examController.nextQuestion
-                    : null,
-                child: const Text('Next'),
+            SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 16)),
+            Obx(
+              () => Expanded(
+                child: SizedBox(
+                  height: ResponsiveUtils.responsiveButtonHeight(context),
+                  child: ElevatedButton(
+                    onPressed:
+                        _examController.currentQuestionIndex.value <
+                            _questions.length - 1
+                        ? _examController.nextQuestion
+                        : null,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 12),
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      'Next',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _handleSubmit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.AppTheme.successColor,
+            SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 16)),
+            Expanded(
+              child: SizedBox(
+                height: ResponsiveUtils.responsiveButtonHeight(context),
+                child: ElevatedButton(
+                  onPressed: _handleSubmit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.AppTheme.successColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveUtils.responsiveBorderRadius(context, 12),
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Submit',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                    ),
+                  ),
+                ),
               ),
-              child: const Text('Submit'),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

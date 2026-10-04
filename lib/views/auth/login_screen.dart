@@ -69,11 +69,12 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: ResponsiveUtils.responsivePadding(context),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: ResponsiveUtils.isDesktop(context) ? 600 : double.infinity,
+                  maxWidth: 600,
                 ),
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -85,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 20)),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.AppTheme.primaryColor.withOpacity(0.3),
+                            color: theme.AppTheme.primaryColor.withValues(alpha:0.3),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -96,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Container(
                             padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 20)),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha:0.2),
                               borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                             ),
                             child: Icon(
@@ -121,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Online Testing System',
                             style: TextStyle(
                               fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha:0.9),
                               letterSpacing: 1,
                             ),
                             textAlign: TextAlign.center,
@@ -180,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha:0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -224,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha:0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -301,7 +302,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                           boxShadow: [
                             BoxShadow(
-                              color: theme.AppTheme.primaryColor.withOpacity(
+                              color: theme.AppTheme.primaryColor.withValues(alpha:
                                 0.3,
                               ),
                               blurRadius: 15,
@@ -376,6 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -386,7 +388,7 @@ class _LoginScreenState extends State<LoginScreen> {
     required VoidCallback onTap,
   }) {
     return Builder(
-      builder: (context) => Expanded(
+      builder: (context) => Flexible(
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.responsiveSpacing(context, 4)),
           child: InkWell(
@@ -407,14 +409,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: theme.AppTheme.primaryColor.withOpacity(0.3),
+                          color: theme.AppTheme.primaryColor.withValues(alpha:0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
                       ]
                     : [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha:0.05),
                           blurRadius: 5,
                           offset: const Offset(0, 2),
                         ),

@@ -1,143 +1,77 @@
 import 'package:flutter/material.dart';
 
 class ResponsiveUtils {
-  // Screen size breakpoints
-  static const double mobileScreen = 600;
-  static const double tabletScreen = 900;
-  static const double desktopScreen = 1200;
+  // Desktop-only configuration - optimized for laptop/desktop
+  static const double desktopScreen = 800; // Lower threshold for desktop-only
 
-  /// Check if current screen is mobile
+  /// Always return true for desktop (laptop/desktop only)
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < mobileScreen;
+    return false; // Disabled - desktop only
   }
 
-  /// Check if current screen is tablet
+  /// Always return false for tablet (laptop/desktop only)
   static bool isTablet(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    return width >= mobileScreen && width < desktopScreen;
+    return false; // Disabled - desktop only
   }
 
-  /// Check if current screen is desktop
+  /// Always return true for desktop (laptop/desktop only)
   static bool isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width >= desktopScreen;
+    return true; // Always desktop
   }
 
-  /// Get responsive value based on screen size
+  /// Get responsive value based on screen size (desktop only)
   static T responsiveValue<T>({
     required BuildContext context,
     required T mobile,
     T? tablet,
     T? desktop,
   }) {
-    if (isDesktop(context) && desktop != null) {
-      return desktop;
-    }
-    if (isTablet(context) && tablet != null) {
-      return tablet;
-    }
-    return mobile;
+    // Always use desktop value if available, otherwise fallback to mobile
+    return desktop ?? mobile;
   }
 
-  /// Get responsive padding
+  /// Get responsive padding (desktop optimized)
   static EdgeInsets responsivePadding(BuildContext context) {
-    if (isDesktop(context)) {
-      return const EdgeInsets.symmetric(horizontal: 48, vertical: 32);
-    }
-    if (isTablet(context)) {
-      return const EdgeInsets.symmetric(horizontal: 32, vertical: 24);
-    }
-    return const EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+    return const EdgeInsets.symmetric(horizontal: 48, vertical: 32);
   }
 
-  /// Get responsive card padding
+  /// Get responsive card padding (desktop optimized)
   static EdgeInsets responsiveCardPadding(BuildContext context) {
-    if (isDesktop(context)) {
-      return const EdgeInsets.all(24);
-    }
-    if (isTablet(context)) {
-      return const EdgeInsets.all(20);
-    }
-    return const EdgeInsets.all(16);
+    return const EdgeInsets.all(24);
   }
 
-  /// Get responsive grid columns
+  /// Get responsive grid columns (desktop optimized)
   static int getGridColumns(BuildContext context) {
-    if (isDesktop(context)) {
-      return 4;
-    }
-    if (isTablet(context)) {
-      return 3;
-    }
-    return 2;
+    return 4;
   }
 
-  /// Get responsive font size
+  /// Get responsive font size (desktop optimized)
   static double responsiveFontSize(BuildContext context, double baseSize) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= desktopScreen) {
-      return baseSize * 1.2;
-    }
-    if (screenWidth >= tabletScreen) {
-      return baseSize * 1.1;
-    }
-    return baseSize;
+    return baseSize * 1.2;
   }
 
-  /// Get responsive icon size
+  /// Get responsive icon size (desktop optimized)
   static double responsiveIconSize(BuildContext context, double baseSize) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= desktopScreen) {
-      return baseSize * 1.3;
-    }
-    if (screenWidth >= tabletScreen) {
-      return baseSize * 1.15;
-    }
-    return baseSize;
+    return baseSize * 1.3;
   }
 
-  /// Get responsive spacing
+  /// Get responsive spacing (desktop optimized)
   static double responsiveSpacing(BuildContext context, double baseSpacing) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= desktopScreen) {
-      return baseSpacing * 1.5;
-    }
-    if (screenWidth >= tabletScreen) {
-      return baseSpacing * 1.25;
-    }
-    return baseSpacing;
+    return baseSpacing * 1.5;
   }
 
-  /// Get responsive container max width
+  /// Get responsive container max width (desktop optimized)
   static double getMaxWidth(BuildContext context) {
-    if (isDesktop(context)) {
-      return 1200;
-    }
-    if (isTablet(context)) {
-      return 900;
-    }
-    return double.infinity;
+    return 1400;
   }
 
-  /// Get responsive button height
+  /// Get responsive button height (desktop optimized)
   static double responsiveButtonHeight(BuildContext context) {
-    if (isDesktop(context)) {
-      return 56;
-    }
-    if (isTablet(context)) {
-      return 52;
-    }
-    return 48;
+    return 56;
   }
 
-  /// Get responsive border radius
+  /// Get responsive border radius (desktop optimized)
   static double responsiveBorderRadius(BuildContext context, double baseRadius) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= desktopScreen) {
-      return baseRadius * 1.2;
-    }
-    if (screenWidth >= tabletScreen) {
-      return baseRadius * 1.1;
-    }
-    return baseRadius;
+    return baseRadius * 1.2;
   }
 }

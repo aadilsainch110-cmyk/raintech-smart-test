@@ -1,12 +1,11 @@
 {
-    "name": "raintech_smart_test",
-    "short_name": "raintech_smart_test",
+    "name": "RainTech Smart Test",
+    "short_name": "RainTech Test",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#2563EB",
+    "theme_color": "#2563EB",
+    "description": "Desktop-optimized examination platform for students and teachers.",
     "prefer_related_applications": false,
     "icons": [
         {

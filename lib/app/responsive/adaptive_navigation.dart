@@ -21,20 +21,8 @@ class AdaptiveNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ResponsiveUtils.isDesktop(context)) {
-      return _buildNavigationRail(context);
-    }
-    return _buildBottomNavigationBar(context);
-  }
-
-  Widget _buildBottomNavigationBar(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onDestinationSelected,
-      backgroundColor: backgroundColor,
-      elevation: 8,
-      destinations: destinations,
-    );
+    // Desktop-only: always use NavigationRail
+    return _buildNavigationRail(context);
   }
 
   Widget _buildNavigationRail(BuildContext context) {
@@ -99,24 +87,8 @@ class AdaptiveScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ResponsiveUtils.isDesktop(context)) {
-      return _buildDesktopScaffold(context);
-    }
-    return _buildMobileScaffold(context);
-  }
-
-  Widget _buildMobileScaffold(BuildContext context) {
-    return Scaffold(
-      appBar: appBar,
-      body: body,
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: bottomNavigationBar,
-      drawer: drawer,
-      endDrawer: endDrawer,
-      backgroundColor: backgroundColor,
-      extendBody: extendBody,
-      extendBodyBehindAppBar: extendBodyBehindAppBar,
-    );
+    // Desktop-only: always use desktop scaffold
+    return _buildDesktopScaffold(context);
   }
 
   Widget _buildDesktopScaffold(BuildContext context) {
@@ -156,14 +128,15 @@ class AdaptiveDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final drawerWidth =
-        width ?? (ResponsiveUtils.isDesktop(context) ? 280 : 300);
+    // Desktop-only: use fixed drawer width
+    final drawerWidth = width ?? 280;
 
     return SizedBox(
       width: drawerWidth,
       child: Drawer(
         child: Column(
           children: [
+            // ignore: use_null_aware_elements
             if (header != null) header!,
             Expanded(
               child: ListView(padding: EdgeInsets.zero, children: children),
@@ -193,32 +166,18 @@ class AdaptiveAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (ResponsiveUtils.isDesktop(context)) {
-      return AppBar(
-        title: Text(
-          title,
-          style: TextStyle(
-            fontSize: ResponsiveUtils.responsiveFontSize(context, 20),
-          ),
-        ),
-        actions: actions,
-        automaticallyImplyLeading: automaticallyImplyLeading,
-        leading: leading,
-        centerTitle: false,
-      );
-    }
-
+    // Desktop-only: always use desktop app bar style
     return AppBar(
       title: Text(
         title,
         style: TextStyle(
-          fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+          fontSize: ResponsiveUtils.responsiveFontSize(context, 20),
         ),
       ),
       actions: actions,
       automaticallyImplyLeading: automaticallyImplyLeading,
       leading: leading,
-      centerTitle: true,
+      centerTitle: false,
     );
   }
 }

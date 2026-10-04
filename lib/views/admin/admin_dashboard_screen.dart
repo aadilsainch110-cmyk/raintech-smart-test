@@ -7,6 +7,7 @@ import '../../controllers/test_controller.dart';
 import '../../controllers/student_controller.dart';
 import '../../controllers/teacher_controller.dart';
 import '../../app/theme/app_theme.dart';
+import '../../app/responsive/responsive_utils.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -56,27 +57,27 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveUtils.responsivePadding(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Obx(
                 () => Text(
                   'Welcome, ${_authController.currentUser?.name ?? 'Admin'} 👋',
-                  style: const TextStyle(
-                    fontSize: 24,
+                  style: TextStyle(
+                    fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
               Obx(
                 () => GridView.count(
-                  crossAxisCount: 2,
+                  crossAxisCount: 4,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
+                  mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
+                  crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
                   childAspectRatio: 1.5,
                   children: [
                     _buildStatCard(
@@ -106,41 +107,47 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
+              Text(
                 'Management',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
               _buildManagementCard(
                 'Users Management',
                 Icons.people_outline,
                 () => _showUsersDialog(),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
               _buildManagementCard(
                 'Courses Management',
                 Icons.menu_book,
                 () => Get.toNamed('/courses-management'),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
               _buildManagementCard(
                 'Classes Management',
                 Icons.class_outlined,
                 () => Get.toNamed('/classes-management'),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
               _buildManagementCard(
                 'Shifts Management',
                 Icons.access_time,
                 () => Get.toNamed('/shifts-management'),
               ),
-              const SizedBox(height: 24),
-              const Text(
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
+              Text(
                 'Quick Stats',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
               Obx(
                 () => Column(
                   children: [
@@ -175,58 +182,104 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     IconData icon,
     Color color,
   ) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppTheme.textSecondary,
+    return Builder(
+      builder: (context) => Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.responsiveBorderRadius(context, 16),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(
+            ResponsiveUtils.responsiveSpacing(context, 16),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: ResponsiveUtils.responsiveIconSize(context, 32),
+                color: color,
               ),
-            ),
-          ],
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 4)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildManagementCard(String title, IconData icon, VoidCallback onTap) {
-    return Card(
-      child: ListTile(
-        leading: Icon(icon, color: AppTheme.primaryColor),
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
+    return Builder(
+      builder: (context) => Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            ResponsiveUtils.responsiveBorderRadius(context, 12),
+          ),
+        ),
+        child: ListTile(
+          leading: Icon(
+            icon,
+            color: AppTheme.primaryColor,
+            size: ResponsiveUtils.responsiveIconSize(context, 24),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+            ),
+          ),
+          trailing: Icon(
+            Icons.arrow_forward_ios,
+            size: ResponsiveUtils.responsiveIconSize(context, 16),
+          ),
+          onTap: onTap,
+        ),
       ),
     );
   }
 
   Widget _buildStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-        ],
+    return Builder(
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: ResponsiveUtils.responsiveSpacing(context, 12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

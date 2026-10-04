@@ -6,6 +6,8 @@ import '../../views/auth/admin_login_screen.dart';
 import '../../views/auth/admin_signup_screen.dart';
 import '../../views/auth/teacher_login_screen.dart';
 import '../../views/auth/teacher_signup_screen.dart';
+import '../../views/splash/splash_screen.dart';
+import '../../views/onboarding/onboarding_screen.dart';
 import '../../views/student/student_home_screen.dart';
 import '../../views/student/student_tests_screen.dart';
 import '../../views/student/student_results_screen.dart';
@@ -26,13 +28,17 @@ import '../../views/admin/admin_dashboard_screen.dart';
 import '../../views/admin/courses_management_screen.dart';
 import '../../views/admin/classes_management_screen.dart';
 import '../../views/admin/shifts_management_screen.dart';
+import '../../views/settings/settings_screen.dart';
+import '../../views/help/help_screen.dart';
 
 part 'app_routes.g.dart';
 
 class AppPages {
-  static const INITIAL = Routes.LOGIN;
+  static const INITIAL = '/splash';
 
   static final routes = [
+    GetPage(name: '/splash', page: () => const SplashScreen()),
+    GetPage(name: '/onboarding', page: () => const OnboardingScreen()),
     GetPage(name: Routes.LOGIN, page: () => const LoginScreen()),
     GetPage(name: Routes.SIGNUP, page: () => const SignupScreen()),
     GetPage(
@@ -99,5 +105,7 @@ class AppPages {
       name: '/shifts-management',
       page: () => const ShiftsManagementScreen(),
     ),
+    GetPage(name: '/settings', page: () => const SettingsScreen()),
+    GetPage(name: '/help', page: () => const HelpScreen()),
   ];
 }

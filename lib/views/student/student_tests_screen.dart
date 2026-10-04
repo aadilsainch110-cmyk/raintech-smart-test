@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../controllers/test_controller.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/theme/app_theme.dart' as theme;
+import '../../app/responsive/responsive_utils.dart';
 
 class StudentTestsScreen extends StatefulWidget {
   const StudentTestsScreen({super.key});
@@ -23,7 +24,9 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Available Tests')),
+      appBar: AppBar(
+        title: const Text('Available Tests'),
+      ),
       body: GetX<TestController>(
         init: _testController,
         builder: (controller) {
@@ -38,14 +41,14 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
                 children: [
                   Icon(
                     Icons.quiz_outlined,
-                    size: 80,
+                    size: ResponsiveUtils.responsiveIconSize(context, 80),
                     color: theme.AppTheme.textSecondary,
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
+                  SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+                  Text(
                     'No tests available',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
                       color: theme.AppTheme.textSecondary,
                     ),
                   ),
@@ -54,71 +57,117 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+          return GridView.builder(
+            padding: ResponsiveUtils.responsivePadding(context),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              childAspectRatio: 1.3,
+              crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
+              mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 16),
+            ),
             itemCount: controller.tests.length,
             itemBuilder: (context, index) {
               final test = controller.tests[index];
               return Card(
-                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.responsiveBorderRadius(context, 16),
+                  ),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(
+                    ResponsiveUtils.responsiveSpacing(context, 20),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        test.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (test.description != null) ...[
-                        const SizedBox(height: 8),
-                        Text(
-                          test.description!,
-                          style: const TextStyle(
-                            color: theme.AppTheme.textSecondary,
+                          Container(
+                            padding: EdgeInsets.all(
+                              ResponsiveUtils.responsiveSpacing(context, 12),
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: theme.AppTheme.primaryGradient,
+                              borderRadius: BorderRadius.circular(
+                                ResponsiveUtils.responsiveBorderRadius(context, 12),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.quiz,
+                              color: Colors.white,
+                              size: ResponsiveUtils.responsiveIconSize(context, 32),
+                            ),
                           ),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            _buildInfoChip(
-                              Icons.help_outline,
-                              '${test.questionCount} Questions',
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+                          Text(
+                            test.title,
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 8),
-                            _buildInfoChip(
-                              Icons.access_time,
-                              '${test.durationMinutes} min',
-                            ),
-                            const SizedBox(width: 8),
-                            _buildInfoChip(
-                              Icons.star_outline,
-                              '${test.totalMarks} Marks',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (test.description != null) ...[
+                            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+                            Text(
+                              test.description!,
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                                color: theme.AppTheme.textSecondary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
-                        ),
+                          const Spacer(),
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+                          Wrap(
+                            spacing: ResponsiveUtils.responsiveSpacing(context, 8),
+                            runSpacing: ResponsiveUtils.responsiveSpacing(context, 8),
+                            children: [
+                              _buildInfoChip(
+                                Icons.help_outline,
+                                '${test.questionCount} Questions',
+                              ),
+                              _buildInfoChip(
+                                Icons.access_time,
+                                '${test.durationMinutes} min',
+                              ),
+                              _buildInfoChip(
+                                Icons.star_outline,
+                                '${test.totalMarks} Marks',
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+                          SizedBox(
+                            width: double.infinity,
+                            height: ResponsiveUtils.responsiveButtonHeight(context),
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Get.toNamed(Routes.TEST_SCREEN, arguments: test);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    ResponsiveUtils.responsiveBorderRadius(context, 12),
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                'Start Test',
+                                style: TextStyle(
+                                  fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Get.toNamed(Routes.TEST_SCREEN, arguments: test);
-                          },
-                          child: const Text('Start Test'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  );
+                },
           );
         },
       ),
@@ -126,10 +175,19 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
   }
 
   Widget _buildInfoChip(IconData icon, String label) {
-    return Chip(
-      avatar: Icon(icon, size: 16),
-      label: Text(label),
-      labelStyle: const TextStyle(fontSize: 12),
+    return Builder(
+      builder: (context) => Chip(
+        avatar: Icon(
+          icon,
+          size: ResponsiveUtils.responsiveIconSize(context, 16),
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+          ),
+        ),
+      ),
     );
   }
 }

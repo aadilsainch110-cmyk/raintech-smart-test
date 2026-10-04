@@ -15,17 +15,8 @@ class AdaptiveLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth >= ResponsiveUtils.desktopScreen && desktop != null) {
-          return desktop!;
-        }
-        if (constraints.maxWidth >= ResponsiveUtils.mobileScreen && tablet != null) {
-          return tablet!;
-        }
-        return mobile;
-      },
-    );
+    // Desktop-only: always use desktop if available, otherwise mobile
+    return desktop ?? mobile;
   }
 }
 
@@ -51,25 +42,17 @@ class AdaptiveGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = ResponsiveUtils.responsiveValue(
-          context: context,
-          mobile: mobileColumns ?? 2,
-          tablet: tabletColumns ?? 3,
-          desktop: desktopColumns ?? 4,
-        );
+    // Desktop-only: use desktop columns or default to 4
+    final columns = desktopColumns ?? 4;
 
-        return GridView.count(
-          crossAxisCount: columns,
-          crossAxisSpacing: spacing,
-          mainAxisSpacing: runSpacing,
-          padding: padding ?? ResponsiveUtils.responsivePadding(context),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: children,
-        );
-      },
+    return GridView.count(
+      crossAxisCount: columns,
+      crossAxisSpacing: spacing,
+      mainAxisSpacing: runSpacing,
+      padding: padding ?? ResponsiveUtils.responsivePadding(context),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: children,
     );
   }
 }
@@ -171,15 +154,8 @@ class AdaptiveRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Desktop-only: always use Row layout
     final effectiveSpacing = ResponsiveUtils.responsiveSpacing(context, spacing);
-
-    if (ResponsiveUtils.isMobile(context)) {
-      return Column(
-        mainAxisSize: mainAxisSize,
-        crossAxisAlignment: crossAxisAlignment,
-        children: _addSpacing(children, effectiveSpacing),
-      );
-    }
 
     return Row(
       mainAxisSize: mainAxisSize,

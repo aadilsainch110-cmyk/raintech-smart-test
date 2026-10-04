@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/student_controller.dart';
 import '../../app/theme/app_theme.dart';
+import '../../app/responsive/responsive_utils.dart';
 
 class TeacherStudentsScreen extends StatefulWidget {
   const TeacherStudentsScreen({super.key});
@@ -34,14 +35,16 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(ResponsiveUtils.responsiveSpacing(context, 16)),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Search students...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.responsiveBorderRadius(context, 8),
+                  ),
                 ),
               ),
               onChanged: (value) {
@@ -61,14 +64,14 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                       children: [
                         Icon(
                           Icons.people_outline,
-                          size: 80,
+                          size: ResponsiveUtils.responsiveIconSize(context, 80),
                           color: AppTheme.textSecondary,
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+                        Text(
                           'No students found',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: ResponsiveUtils.responsiveFontSize(context, 18),
                             color: AppTheme.textSecondary,
                           ),
                         ),
@@ -76,7 +79,7 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: ResponsiveUtils.responsivePadding(context),
                     itemCount: _studentController.students.length,
                     itemBuilder: (context, index) {
                       final student = _studentController.students[index];
@@ -90,35 +93,64 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
                       }
 
                       return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
+                        margin: EdgeInsets.only(
+                          bottom: ResponsiveUtils.responsiveSpacing(context, 12),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ResponsiveUtils.responsiveBorderRadius(context, 12),
+                          ),
+                        ),
                         child: ListTile(
                           leading: CircleAvatar(
                             backgroundColor: AppTheme.primaryColor,
+                            radius: ResponsiveUtils.responsiveSpacing(context, 24),
                             child: Text(
                               student.name[0].toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
+                                fontSize: ResponsiveUtils.responsiveFontSize(context, 20),
                               ),
                             ),
                           ),
-                          title: Text(student.name),
+                          title: Text(
+                            student.name,
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(student.email),
+                              Text(
+                                student.email,
+                                style: TextStyle(
+                                  fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                                ),
+                              ),
                               if (student.studentId != null)
-                                Text('ID: ${student.studentId}'),
+                                Text(
+                                  'ID: ${student.studentId}',
+                                  style: TextStyle(
+                                    fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                                  ),
+                                ),
                             ],
                           ),
                           trailing: Chip(
-                            label: Text(student.isActive ? 'Active' : 'Inactive'),
+                            label: Text(
+                              student.isActive ? 'Active' : 'Inactive',
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                              ),
+                            ),
                             backgroundColor: student.isActive
                                 ? AppTheme.successColor
                                 : AppTheme.errorColor,
                             labelStyle: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
                             ),
                           ),
                         ),

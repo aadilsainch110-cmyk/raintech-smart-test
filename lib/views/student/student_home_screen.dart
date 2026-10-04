@@ -51,19 +51,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         title: const Text('RAINTECH'),
         elevation: 0,
         actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                _authController.signOut();
-              },
-              tooltip: 'Logout',
-            ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {
+              Get.snackbar(
+                'Notifications',
+                'Notifications feature coming soon',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              _authController.signOut();
+            },
+            tooltip: 'Logout',
           ),
         ],
       ),

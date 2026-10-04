@@ -151,12 +151,12 @@ class ResponsiveGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AdaptiveGrid(
-      children: children,
       mobileColumns: mobileColumns,
       tabletColumns: tabletColumns,
       desktopColumns: desktopColumns,
       spacing: spacing,
       runSpacing: runSpacing,
+      children: children,
     );
   }
 }
@@ -216,7 +216,6 @@ class ResponsiveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final height = ResponsiveUtils.responsiveButtonHeight(context);
-    final fontSize = ResponsiveUtils.responsiveFontSize(context, 16);
 
     final button = SizedBox(
       height: height,
@@ -302,11 +301,11 @@ class ResponsiveRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AdaptiveRow(
-      children: children,
       mainAxisAlignment: mainAxisAlignment,
       crossAxisAlignment: crossAxisAlignment,
       mainAxisSize: mainAxisSize,
       spacing: spacing,
+      children: children,
     );
   }
 }
