@@ -495,61 +495,116 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
         }
 
         print('DEBUG: CSV data read, length: ${csvData.length}');
+        print('DEBUG: First 200 chars of CSV: ${csvData.substring(0, csvData.length > 200 ? 200 : csvData.length)}');
 
         final rows = const CsvToListConverter().convert(csvData);
         print('DEBUG: CSV parsed, rows: ${rows.length}');
+
+        if (rows.isEmpty) {
+          throw Exception('CSV file is empty or could not be parsed');
+        }
 
         // Skip header row if present
         final startIndex =
             rows[0][0].toString().toLowerCase().contains('question') ? 1 : 0;
         print('DEBUG: Start index (skipping header): $startIndex');
 
+        if (startIndex >= rows.length) {
+          throw Exception('CSV file has no data rows (only header)');
+        }
+
         int importedCount = 0;
+        int skippedCount = 0;
+        List<String> errors = [];
+
         for (int i = startIndex; i < rows.length; i++) {
           final row = rows[i];
           print('DEBUG: Processing row $i, columns: ${row.length}');
+          print('DEBUG: Row data: $row');
+          
           if (row.length >= 6) {
+            // Validate row data
+            final question = row[0]?.toString().trim() ?? '';
+            final optionA = row[1]?.toString().trim() ?? '';
+            final optionB = row[2]?.toString().trim() ?? '';
+            final optionC = row[3]?.toString().trim() ?? '';
+            final optionD = row[4]?.toString().trim() ?? '';
+            final correctAnswer = row[5]?.toString().trim().toUpperCase() ?? '';
+            final marks = row.length > 6 ? int.tryParse(row[6].toString()) ?? 1 : 1;
+
+            print('DEBUG: Question: $question');
+            print('DEBUG: Correct Answer: $correctAnswer');
+
+            if (question.isEmpty) {
+              errors.add('Row $i: Question is empty');
+              skippedCount++;
+              continue;
+            }
+
+            if (!['A', 'B', 'C', 'D'].contains(correctAnswer)) {
+              errors.add('Row $i: Invalid correct answer "$correctAnswer" (must be A, B, C, or D)');
+              skippedCount++;
+              continue;
+            }
+
             print('DEBUG: Row has enough columns, adding question');
             final success = await _questionController.addQuestion(
               testId: _test!.id!,
-              question: row[0].toString(),
-              optionA: row[1].toString(),
-              optionB: row[2].toString(),
-              optionC: row[3].toString(),
-              optionD: row[4].toString(),
-              correctAnswer: row[5].toString().toUpperCase(),
-              marks: row.length > 6 ? int.tryParse(row[6].toString()) ?? 1 : 1,
+              question: question,
+              optionA: optionA,
+              optionB: optionB,
+              optionC: optionC,
+              optionD: optionD,
+              correctAnswer: correctAnswer,
+              marks: marks,
               order: _questionController.questions.length + 1,
             );
             if (success) {
               importedCount++;
               print('DEBUG: Question $i imported successfully');
             } else {
-              print('DEBUG: Question $i import failed');
+              print('DEBUG: Question $i import failed - controller returned false');
+              errors.add('Row $i: Failed to add question (controller error)');
+              skippedCount++;
             }
           } else {
-            print('DEBUG: Row $i skipped - not enough columns');
+            print('DEBUG: Row $i skipped - not enough columns (got ${row.length}, need 6)');
+            errors.add('Row $i: Not enough columns (got ${row.length}, need 6)');
+            skippedCount++;
           }
         }
 
-        print('DEBUG: Total imported: $importedCount');
+        print('DEBUG: Total imported: $importedCount, skipped: $skippedCount');
         await _loadData();
 
-        Get.snackbar(
-          'Import Complete',
-          'Successfully imported $importedCount questions',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppTheme.successColor,
-          colorText: Colors.white,
-        );
+        if (importedCount > 0) {
+          Get.snackbar(
+            'Import Complete',
+            'Successfully imported $importedCount questions${skippedCount > 0 ? ' ($skippedCount skipped)' : ''}',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppTheme.successColor,
+            colorText: Colors.white,
+          );
+        } else {
+          Get.snackbar(
+            'Import Failed',
+            'No questions imported. Errors: ${errors.take(3).join("; ")}${errors.length > 3 ? "..." : ""}',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: AppTheme.errorColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+          );
+        }
       }
     } catch (e) {
+      print('DEBUG: Exception: $e');
       Get.snackbar(
         'Import Failed',
         'Error: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorColor,
         colorText: Colors.white,
+        duration: const Duration(seconds: 5),
       );
     }
   }
