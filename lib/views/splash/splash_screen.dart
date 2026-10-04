@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/theme/app_theme.dart' as theme;
+import '../../controllers/auth_controller.dart';
+import '../../services/preferences_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -15,12 +17,14 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  final AuthController _authController = Get.put(AuthController());
+  final PreferencesService _prefsService = PreferencesService();
 
   @override
   void initState() {
     super.initState();
     _initAnimation();
-    _navigateToLogin();
+    _checkAuthAndNavigate();
   }
 
   void _initAnimation() {
@@ -46,10 +50,43 @@ class _SplashScreenState extends State<SplashScreen>
     _animationController.forward();
   }
 
-  void _navigateToLogin() {
-    Future.delayed(const Duration(seconds: 3), () {
+  void _checkAuthAndNavigate() async {
+    // Wait for Firebase to initialize and check auth state
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Check both Firebase auth state and saved preferences
+    final isFirebaseLoggedIn = _authController.isAuthenticated;
+    final isPrefsLoggedIn = await _prefsService.isLoggedIn();
+    final savedRole = await _prefsService.getUserRole();
+
+    if (isFirebaseLoggedIn && _authController.currentUser != null) {
+      // Firebase auth is active, use it
+      final role = _authController.userRole;
+      _navigateBasedOnRole(role);
+    } else if (isPrefsLoggedIn && savedRole != null) {
+      // Firebase might not be initialized yet, but we have saved login state
+      // Navigate to appropriate dashboard (Firebase will load user data)
+      _navigateBasedOnRole(savedRole);
+    } else {
+      // Not logged in, go to login screen
       Get.offAllNamed(Routes.LOGIN);
-    });
+    }
+  }
+
+  void _navigateBasedOnRole(String? role) {
+    switch (role) {
+      case 'student':
+        Get.offAllNamed(Routes.STUDENT_HOME);
+        break;
+      case 'teacher':
+        Get.offAllNamed(Routes.TEACHER_DASHBOARD);
+        break;
+      case 'admin':
+        Get.offAllNamed(Routes.ADMIN_DASHBOARD);
+        break;
+      default:
+        Get.offAllNamed(Routes.LOGIN);
+    }
   }
 
   @override

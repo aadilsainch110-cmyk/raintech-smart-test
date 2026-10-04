@@ -3,16 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+import '../services/preferences_service.dart';
 import '../app/routes/app_routes.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
+  final PreferencesService _prefsService = PreferencesService();
 
   final Rx<User?> _firebaseUser = Rx<User?>(null);
   final Rx<UserModel?> _currentUser = Rx<UserModel?>(null);
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
+  bool _hasNavigated = false; // Flag to prevent multiple navigations
 
   User? get firebaseUser => _firebaseUser.value;
   UserModel? get currentUser => _currentUser.value;
@@ -31,6 +34,7 @@ class AuthController extends GetxController {
       await _loadUserData(user.uid);
     } else {
       _currentUser.value = null;
+      _hasNavigated = false; // Reset flag on logout
     }
   }
 
@@ -58,7 +62,11 @@ class AuthController extends GetxController {
           return;
         }
 
-        _navigateBasedOnRole();
+        // Only navigate if we haven't navigated yet (prevents repeated navigation)
+        if (!_hasNavigated) {
+          _navigateBasedOnRole();
+          _hasNavigated = true;
+        }
       }
     } catch (e) {
       errorMessage.value = e.toString();
@@ -93,6 +101,15 @@ class AuthController extends GetxController {
         email: email,
         password: password,
       );
+
+      // Save login state to preferences after successful login
+      if (_firebaseUser.value != null && _currentUser.value != null) {
+        await _prefsService.setLoginState(
+          isLoggedIn: true,
+          userRole: _currentUser.value?.role,
+          userId: _firebaseUser.value?.uid,
+        );
+      }
 
       return true;
     } on FirebaseAuthException catch (e) {
@@ -146,6 +163,13 @@ class AuthController extends GetxController {
 
       await _authService.updateDisplayName(displayName: name);
 
+      // Save login state to preferences after successful signup
+      await _prefsService.setLoginState(
+        isLoggedIn: true,
+        userRole: role,
+        userId: userCredential.user?.uid,
+      );
+
       return true;
     } on FirebaseAuthException catch (e) {
       errorMessage.value = _getAuthErrorMessage(e.code);
@@ -187,6 +211,8 @@ class AuthController extends GetxController {
     try {
       await _authService.signOut();
       _currentUser.value = null;
+      _hasNavigated = false; // Reset navigation flag
+      await _prefsService.clearLoginState(); // Clear saved login state
       Get.offAllNamed(Routes.LOGIN);
     } catch (e) {
       errorMessage.value = e.toString();

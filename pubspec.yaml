@@ -44,6 +44,9 @@ dependencies:
   # State Management
   get: ^4.6.6
 
+  # Shared Preferences
+  shared_preferences: ^2.3.2
+
   # CSV
   csv: ^6.0.0
 
