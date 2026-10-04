@@ -102,66 +102,70 @@ class _SplashScreenState extends State<SplashScreen>
         decoration: BoxDecoration(
           gradient: theme.AppTheme.primaryGradient,
         ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo/Icon
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha:0.2),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha:0.3),
-                            width: 2,
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo/Icon
+                          Container(
+                            padding: const EdgeInsets.all(32),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha:0.2),
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha:0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.school,
+                              size: 80,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.school,
-                          size: 80,
-                          color: Colors.white,
-                        ),
+                          const SizedBox(height: 32),
+                          // App Name
+                          const Text(
+                            'RAINTECH',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 3,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Tagline
+                          const Text(
+                            'Smart Testing System',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          const SizedBox(height: 48),
+                          // Loading Indicator
+                          const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 3,
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 32),
-                      // App Name
-                      const Text(
-                        'RAINTECH',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          letterSpacing: 3,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // Tagline
-                      const Text(
-                        'Smart Testing System',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                      // Loading Indicator
-                      const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        strokeWidth: 3,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  );
+                },
+              ),
+            ),
           ),
         ),
       ),
