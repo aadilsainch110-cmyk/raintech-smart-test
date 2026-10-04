@@ -77,9 +77,9 @@ class ResponsiveUtils {
     if (isMobile(context)) {
       return baseSize;
     } else if (isTablet(context)) {
-      return baseSize * 1.1;
+      return baseSize * 1.05;
     } else {
-      return baseSize * 1.2;
+      return baseSize * 1.1;
     }
   }
 
@@ -88,9 +88,9 @@ class ResponsiveUtils {
     if (isMobile(context)) {
       return baseSize;
     } else if (isTablet(context)) {
-      return baseSize * 1.15;
+      return baseSize * 1.1;
     } else {
-      return baseSize * 1.3;
+      return baseSize * 1.2;
     }
   }
 
@@ -99,9 +99,9 @@ class ResponsiveUtils {
     if (isMobile(context)) {
       return baseSpacing;
     } else if (isTablet(context)) {
-      return baseSpacing * 1.25;
+      return baseSpacing * 1.15;
     } else {
-      return baseSpacing * 1.5;
+      return baseSpacing * 1.3;
     }
   }
 
@@ -121,9 +121,9 @@ class ResponsiveUtils {
     if (isMobile(context)) {
       return 48;
     } else if (isTablet(context)) {
-      return 52;
+      return 50;
     } else {
-      return 56;
+      return 52;
     }
   }
 
