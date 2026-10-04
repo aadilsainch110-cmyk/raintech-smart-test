@@ -97,7 +97,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ResponsiveUtils.getGridColumns(context),
-        childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.4,
+        childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.3,
         crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
         mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
       ),
@@ -112,14 +112,14 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
               ),
               child: Padding(
                 padding: EdgeInsets.all(
-                  ResponsiveUtils.responsiveSpacing(context, 16),
+                  ResponsiveUtils.responsiveSpacing(context, 12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: EdgeInsets.all(
-                        ResponsiveUtils.responsiveSpacing(context, 12),
+                        ResponsiveUtils.responsiveSpacing(context, 10),
                       ),
                       decoration: BoxDecoration(
                         gradient: theme.AppTheme.primaryGradient,
@@ -133,7 +133,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                         size: ResponsiveUtils.responsiveIconSize(context, 24),
                       ),
                     ),
-                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 10)),
                     Text(
                       course.name,
                       style: TextStyle(
@@ -188,7 +188,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: ResponsiveUtils.getGridColumns(context),
-        childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.4,
+        childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.3,
         crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
         mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
       ),
@@ -203,14 +203,14 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
               ),
               child: Padding(
                 padding: EdgeInsets.all(
-                  ResponsiveUtils.responsiveSpacing(context, 16),
+                  ResponsiveUtils.responsiveSpacing(context, 12),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
                       padding: EdgeInsets.all(
-                        ResponsiveUtils.responsiveSpacing(context, 12),
+                        ResponsiveUtils.responsiveSpacing(context, 10),
                       ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -229,7 +229,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                         size: ResponsiveUtils.responsiveIconSize(context, 24),
                       ),
                     ),
-                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 10)),
                     Text(
                       course.name,
                       style: TextStyle(
@@ -254,7 +254,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                     const Spacer(),
                     SizedBox(
                       width: double.infinity,
-                      height: ResponsiveUtils.responsiveButtonHeight(context) * 0.8,
+                      height: ResponsiveUtils.responsiveButtonHeight(context) * 0.7,
                       child: ElevatedButton(
                         onPressed: () async {
                           final success = await _enrollmentController.createEnrollment(
