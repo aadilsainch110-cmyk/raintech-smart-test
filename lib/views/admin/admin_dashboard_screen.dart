@@ -62,15 +62,51 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Obx(
-                () => Text(
-                  'Welcome, ${_authController.currentUser?.name ?? 'Admin'} 👋',
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
-                    fontWeight: FontWeight.bold,
-                  ),
+            Container(
+              padding: EdgeInsets.all(
+                ResponsiveUtils.responsiveSpacing(context, 24),
+              ),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryColor.withValues(alpha: 0.1),
+                    AppTheme.secondaryColor.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.responsiveBorderRadius(context, 20),
+                ),
+                border: Border.all(
+                  color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                  width: 1.5,
                 ),
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'WELCOME',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 11),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                  SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+                  Obx(
+                    () => Text(
+                      _authController.currentUser?.name ?? 'Admin',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 26),
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
               SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
               Obx(
                 () => GridView.count(

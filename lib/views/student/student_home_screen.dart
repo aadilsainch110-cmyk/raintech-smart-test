@@ -273,53 +273,70 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             // Welcome Section
             Container(
               padding: EdgeInsets.all(
-                ResponsiveUtils.responsiveSpacing(context, 24),
+                ResponsiveUtils.responsiveSpacing(context, 28),
               ),
               decoration: BoxDecoration(
                 gradient: theme.AppTheme.primaryGradient,
                 borderRadius: BorderRadius.circular(
-                  ResponsiveUtils.responsiveBorderRadius(context, 20),
+                  ResponsiveUtils.responsiveBorderRadius(context, 24),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.AppTheme.primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
+                    color: theme.AppTheme.primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 25,
+                    offset: const Offset(0, 12),
                   ),
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Obx(
-                    () => Text(
-                      'Welcome back,\n${_authController.currentUser?.name ?? 'Student'} 👋',
-                      style: TextStyle(
-                        fontSize: ResponsiveUtils.responsiveFontSize(
-                          context,
-                          24,
-                        ),
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.2,
-                      ),
+                  Text(
+                    'WELCOME BACK',
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withValues(alpha: 0.85),
+                      letterSpacing: 3,
                     ),
                   ),
                   SizedBox(
                     height: ResponsiveUtils.responsiveSpacing(context, 12),
                   ),
+                  Obx(
+                    () => Text(
+                      _authController.currentUser?.name ?? 'Student',
+                      style: TextStyle(
+                        fontSize: ResponsiveUtils.responsiveFontSize(
+                          context,
+                          28,
+                        ),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        height: 1.2,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: ResponsiveUtils.responsiveSpacing(context, 16),
+                  ),
                   Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: ResponsiveUtils.responsiveSpacing(
                         context,
-                        16,
+                        20,
                       ),
-                      vertical: ResponsiveUtils.responsiveSpacing(context, 8),
+                      vertical: ResponsiveUtils.responsiveSpacing(context, 10),
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(
-                        ResponsiveUtils.responsiveBorderRadius(context, 20),
+                        ResponsiveUtils.responsiveBorderRadius(context, 24),
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 1.5,
                       ),
                     ),
                     child: Row(
@@ -328,20 +345,18 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         Icon(
                           Icons.school,
                           color: Colors.white,
-                          size: ResponsiveUtils.responsiveIconSize(context, 16),
+                          size: ResponsiveUtils.responsiveIconSize(context, 22),
                         ),
                         SizedBox(
-                          width: ResponsiveUtils.responsiveSpacing(context, 8),
+                          width: ResponsiveUtils.responsiveSpacing(context, 10),
                         ),
                         Text(
                           'Student Dashboard',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: ResponsiveUtils.responsiveFontSize(
-                              context,
-                              14,
-                            ),
-                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontSize: ResponsiveUtils.responsiveFontSize(context, 15),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
