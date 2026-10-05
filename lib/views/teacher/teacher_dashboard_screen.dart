@@ -531,6 +531,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     : AppTheme.errorColor,
                 size: ResponsiveUtils.responsiveIconSize(context, 24),
               ),
+              onTap: () {
+                Get.toNamed('/teacher-courses');
+              },
             ),
           );
         },
