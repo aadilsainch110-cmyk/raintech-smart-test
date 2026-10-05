@@ -123,9 +123,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             ),
             _buildDrawerItem(Icons.dashboard, 'Dashboard', 0),
             _buildDrawerItem(Icons.quiz, 'Tests', 1),
-            _buildDrawerItem(Icons.people, 'Students', 2),
-            _buildDrawerItem(Icons.assessment, 'Results', 3),
-            _buildDrawerItem(Icons.person, 'Profile', 4),
+            _buildDrawerItem(Icons.menu_book, 'Courses', 2),
+            _buildDrawerItem(Icons.people, 'Students', 3),
+            _buildDrawerItem(Icons.assessment, 'Results', 4),
+            _buildDrawerItem(Icons.person, 'Profile', 5),
           ],
         ),
       ),
@@ -174,6 +175,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           label: 'Tests',
         ),
         NavigationDestination(
+          icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
+          label: 'Courses',
+        ),
+        NavigationDestination(
           icon: Icon(Icons.people_outlined),
           selectedIcon: Icon(Icons.people),
           label: 'Students',
@@ -200,12 +206,15 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         Get.toNamed(Routes.TEACHER_TESTS);
         break;
       case 2:
-        Get.toNamed(Routes.TEACHER_STUDENTS);
+        Get.toNamed('/teacher-courses');
         break;
       case 3:
-        Get.toNamed(Routes.TEACHER_RESULTS);
+        Get.toNamed(Routes.TEACHER_STUDENTS);
         break;
       case 4:
+        Get.toNamed(Routes.TEACHER_RESULTS);
+        break;
+      case 5:
         Get.toNamed(Routes.TEACHER_PROFILE);
         break;
     }
@@ -353,7 +362,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             }),
             SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
             _buildQuickAction('Manage Courses', Icons.menu_book, () {
-              Get.toNamed('/courses-management');
+              Get.toNamed('/teacher-courses');
             }),
             SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
             Text(

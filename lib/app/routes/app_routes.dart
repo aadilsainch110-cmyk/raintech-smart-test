@@ -21,6 +21,7 @@ import '../../views/teacher/teacher_tests_screen.dart';
 import '../../views/teacher/teacher_students_screen.dart';
 import '../../views/teacher/teacher_results_screen.dart';
 import '../../views/teacher/teacher_profile_screen.dart';
+import '../../views/teacher/teacher_courses_screen.dart';
 import '../../views/teacher/create_test_screen.dart';
 import '../../views/teacher/test_questions_screen.dart';
 import '../../views/teacher/test_monitoring_screen.dart';
@@ -70,6 +71,7 @@ class AppPages {
       name: Routes.TEACHER_DASHBOARD,
       page: () => const TeacherDashboardScreen(),
     ),
+    GetPage(name: '/teacher-courses', page: () => const TeacherCoursesScreen()),
     GetPage(name: Routes.TEACHER_TESTS, page: () => const TeacherTestsScreen()),
     GetPage(
       name: Routes.TEACHER_STUDENTS,
