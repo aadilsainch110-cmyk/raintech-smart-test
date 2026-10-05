@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/course_controller.dart';
+import '../../controllers/auth_controller.dart';
 import '../../models/course_model.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/responsive/responsive_utils.dart';
+import '../../app/routes/app_routes.dart';
 
 class TeacherCoursesScreen extends StatefulWidget {
   const TeacherCoursesScreen({super.key});
@@ -15,6 +17,9 @@ class TeacherCoursesScreen extends StatefulWidget {
 
 class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
   final CourseController _courseController = Get.put(CourseController());
+  final AuthController _authController = Get.find<AuthController>();
+
+  int _selectedIndex = 2;
 
   @override
   void initState() {
@@ -38,6 +43,10 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
           ),
         ],
       ),
+      drawer: _buildNavigationDrawer(context),
+      bottomNavigationBar: ResponsiveUtils.isMobile(context)
+          ? _buildBottomNavigationBar()
+          : null,
       body: RefreshIndicator(
         onRefresh: _loadData,
         child: Obx(
@@ -314,5 +323,158 @@ class _TeacherCoursesScreenState extends State<TeacherCoursesScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildNavigationDrawer(BuildContext context) {
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.secondaryColor,
+            ],
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.secondaryColor,
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.person, color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Teacher Portal',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Obx(
+                    () => Text(
+                      _authController.currentUser?.name ?? 'Teacher',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildDrawerItem(Icons.dashboard, 'Dashboard', 0),
+            _buildDrawerItem(Icons.quiz, 'Tests', 1),
+            _buildDrawerItem(Icons.menu_book, 'Courses', 2),
+            _buildDrawerItem(Icons.people, 'Students', 3),
+            _buildDrawerItem(Icons.assessment, 'Results', 4),
+            _buildDrawerItem(Icons.person, 'Profile', 5),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(IconData icon, String label, int index) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        label,
+        style: const TextStyle(color: Colors.white),
+      ),
+      selected: _selectedIndex == index,
+      selectedTileColor: Colors.white.withValues(alpha: 0.2),
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+        _handleNavigation(index);
+        if (ResponsiveUtils.isMobile(context)) {
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return NavigationBar(
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+        _handleNavigation(index);
+      },
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.quiz_outlined),
+          selectedIcon: Icon(Icons.quiz),
+          label: 'Tests',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
+          label: 'Courses',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.people_outlined),
+          selectedIcon: Icon(Icons.people),
+          label: 'Students',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.assessment_outlined),
+          selectedIcon: Icon(Icons.assessment),
+          label: 'Results',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outlined),
+          selectedIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
+  void _handleNavigation(int index) {
+    switch (index) {
+      case 0:
+        Get.toNamed(Routes.TEACHER_DASHBOARD);
+        break;
+      case 1:
+        Get.toNamed(Routes.TEACHER_TESTS);
+        break;
+      case 2:
+        Navigator.pop(context);
+        break;
+      case 3:
+        Get.toNamed(Routes.TEACHER_STUDENTS);
+        break;
+      case 4:
+        Get.toNamed(Routes.TEACHER_RESULTS);
+        break;
+      case 5:
+        Get.toNamed(Routes.TEACHER_PROFILE);
+        break;
+    }
   }
 }

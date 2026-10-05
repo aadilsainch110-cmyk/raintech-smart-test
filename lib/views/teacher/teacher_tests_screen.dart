@@ -23,6 +23,8 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
   final AuthController _authController = Get.find<AuthController>();
   final CourseController _courseController = Get.put(CourseController());
 
+  int _selectedIndex = 1;
+
   @override
   void initState() {
     super.initState();
@@ -217,6 +219,10 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Tests')),
+      drawer: _buildNavigationDrawer(context),
+      bottomNavigationBar: ResponsiveUtils.isMobile(context)
+          ? _buildBottomNavigationBar()
+          : null,
       body: Obx(
         () => _testController.isLoading.value
             ? const Center(child: CircularProgressIndicator())
@@ -528,6 +534,159 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _buildNavigationDrawer(BuildContext context) {
+    return Drawer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.primaryColor,
+              AppTheme.secondaryColor,
+            ],
+          ),
+        ),
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryColor,
+                    AppTheme.secondaryColor,
+                  ],
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.person, color: Colors.white, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Teacher Portal',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Obx(
+                    () => Text(
+                      _authController.currentUser?.name ?? 'Teacher',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildDrawerItem(Icons.dashboard, 'Dashboard', 0),
+            _buildDrawerItem(Icons.quiz, 'Tests', 1),
+            _buildDrawerItem(Icons.menu_book, 'Courses', 2),
+            _buildDrawerItem(Icons.people, 'Students', 3),
+            _buildDrawerItem(Icons.assessment, 'Results', 4),
+            _buildDrawerItem(Icons.person, 'Profile', 5),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem(IconData icon, String label, int index) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        label,
+        style: const TextStyle(color: Colors.white),
+      ),
+      selected: _selectedIndex == index,
+      selectedTileColor: Colors.white.withValues(alpha: 0.2),
+      onTap: () {
+        setState(() {
+          _selectedIndex = index;
+        });
+        _handleNavigation(index);
+        if (ResponsiveUtils.isMobile(context)) {
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return NavigationBar(
+      selectedIndex: _selectedIndex,
+      onDestinationSelected: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+        _handleNavigation(index);
+      },
+      destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.dashboard_outlined),
+          selectedIcon: Icon(Icons.dashboard),
+          label: 'Dashboard',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.quiz_outlined),
+          selectedIcon: Icon(Icons.quiz),
+          label: 'Tests',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.menu_book_outlined),
+          selectedIcon: Icon(Icons.menu_book),
+          label: 'Courses',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.people_outlined),
+          selectedIcon: Icon(Icons.people),
+          label: 'Students',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.assessment_outlined),
+          selectedIcon: Icon(Icons.assessment),
+          label: 'Results',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.person_outlined),
+          selectedIcon: Icon(Icons.person),
+          label: 'Profile',
+        ),
+      ],
+    );
+  }
+
+  void _handleNavigation(int index) {
+    switch (index) {
+      case 0:
+        Get.toNamed(Routes.TEACHER_DASHBOARD);
+        break;
+      case 1:
+        Navigator.pop(context);
+        break;
+      case 2:
+        Get.toNamed(Routes.TEACHER_COURSES);
+        break;
+      case 3:
+        Get.toNamed(Routes.TEACHER_STUDENTS);
+        break;
+      case 4:
+        Get.toNamed(Routes.TEACHER_RESULTS);
+        break;
+      case 5:
+        Get.toNamed(Routes.TEACHER_PROFILE);
+        break;
+    }
   }
 
   Widget _buildInfoChip(IconData icon, String label) {

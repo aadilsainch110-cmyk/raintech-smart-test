@@ -11,6 +11,7 @@ abstract class Routes {
   static const TEST_SCREEN = '/test-screen';
   static const TEACHER_DASHBOARD = '/teacher/dashboard';
   static const TEACHER_TESTS = '/teacher/tests';
+  static const TEACHER_COURSES = '/teacher-courses';
   static const TEACHER_STUDENTS = '/teacher/students';
   static const TEACHER_RESULTS = '/teacher/results';
   static const TEACHER_PROFILE = '/teacher/profile';

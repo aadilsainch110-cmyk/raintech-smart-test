@@ -71,7 +71,7 @@ class AppPages {
       name: Routes.TEACHER_DASHBOARD,
       page: () => const TeacherDashboardScreen(),
     ),
-    GetPage(name: '/teacher-courses', page: () => const TeacherCoursesScreen()),
+    GetPage(name: Routes.TEACHER_COURSES, page: () => const TeacherCoursesScreen()),
     GetPage(name: Routes.TEACHER_TESTS, page: () => const TeacherTestsScreen()),
     GetPage(
       name: Routes.TEACHER_STUDENTS,
