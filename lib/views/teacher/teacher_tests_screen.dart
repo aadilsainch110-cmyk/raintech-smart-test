@@ -259,11 +259,11 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                   final test = _testController.tests[index];
                   return Card(
                     margin: EdgeInsets.only(
-                      bottom: ResponsiveUtils.responsiveSpacing(context, 16),
+                      bottom: ResponsiveUtils.responsiveSpacing(context, 12),
                     ),
                     child: Padding(
                       padding: EdgeInsets.all(
-                        ResponsiveUtils.responsiveSpacing(context, 16),
+                        ResponsiveUtils.responsiveSpacing(context, 12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +278,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                     fontSize:
                                         ResponsiveUtils.responsiveFontSize(
                                           context,
-                                          18,
+                                          16,
                                         ),
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -298,7 +298,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                             SizedBox(
                               height: ResponsiveUtils.responsiveSpacing(
                                 context,
-                                8,
+                                6,
                               ),
                             ),
                             Text(
@@ -307,7 +307,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                 color: AppTheme.textSecondary,
                                 fontSize: ResponsiveUtils.responsiveFontSize(
                                   context,
-                                  14,
+                                  13,
                                 ),
                               ),
                             ),
@@ -315,7 +315,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                           SizedBox(
                             height: ResponsiveUtils.responsiveSpacing(
                               context,
-                              12,
+                              10,
                             ),
                           ),
                           SingleChildScrollView(
@@ -324,27 +324,27 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                               children: [
                                 _buildInfoChip(
                                   Icons.help_outline,
-                                  '${test.questionCount} Questions',
+                                  '${test.questionCount} Q',
                                 ),
                                 SizedBox(
                                   width: ResponsiveUtils.responsiveSpacing(
                                     context,
-                                    8,
+                                    6,
                                   ),
                                 ),
                                 _buildInfoChip(
                                   Icons.access_time,
-                                  '${test.durationMinutes} min',
+                                  '${test.durationMinutes}m',
                                 ),
                                 SizedBox(
                                   width: ResponsiveUtils.responsiveSpacing(
                                     context,
-                                    8,
+                                    6,
                                   ),
                                 ),
                                 _buildInfoChip(
                                   Icons.star_outline,
-                                  '${test.totalMarks} Marks',
+                                  '${test.totalMarks} M',
                                 ),
                               ],
                             ),
@@ -352,7 +352,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                           SizedBox(
                             height: ResponsiveUtils.responsiveSpacing(
                               context,
-                              16,
+                              12,
                             ),
                           ),
                           Row(
@@ -365,14 +365,14 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                       arguments: test,
                                     );
                                   },
-                                  icon: const Icon(Icons.edit, size: 16),
+                                  icon: const Icon(Icons.edit, size: 14),
                                   label: const Text('Questions'),
                                 ),
                               ),
                               SizedBox(
                                 width: ResponsiveUtils.responsiveSpacing(
                                   context,
-                                  8,
+                                  6,
                                 ),
                               ),
                               if (test.status == 'published')
@@ -386,7 +386,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                     },
                                     icon: const Icon(
                                       Icons.visibility,
-                                      size: 16,
+                                      size: 14,
                                     ),
                                     label: const Text('Monitor'),
                                   ),
@@ -394,7 +394,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                               SizedBox(
                                 width: ResponsiveUtils.responsiveSpacing(
                                   context,
-                                  8,
+                                  6,
                                 ),
                               ),
                               if (test.status == 'draft')
@@ -427,7 +427,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                         );
                                       }
                                     },
-                                    icon: const Icon(Icons.publish, size: 16),
+                                    icon: const Icon(Icons.publish, size: 14),
                                     label: const Text('Publish'),
                                   ),
                                 ),
@@ -441,7 +441,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                     },
                                     icon: const Icon(
                                       Icons.check_circle,
-                                      size: 16,
+                                      size: 14,
                                     ),
                                     label: const Text('Release Results'),
                                     style: ElevatedButton.styleFrom(
@@ -449,10 +449,10 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                     ),
                                   ),
                                 ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               IconButton(
                                 onPressed: () => _showEditTestDialog(test),
-                                icon: const Icon(Icons.edit_note),
+                                icon: const Icon(Icons.edit_note, size: 20),
                                 color: AppTheme.primaryColor,
                                 tooltip: 'Edit Test',
                               ),
@@ -514,7 +514,7 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                     }
                                   }
                                 },
-                                icon: const Icon(Icons.delete),
+                                icon: const Icon(Icons.delete, size: 20),
                                 color: AppTheme.errorColor,
                                 tooltip: 'Delete Test',
                               ),
@@ -691,9 +691,9 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
 
   Widget _buildInfoChip(IconData icon, String label) {
     return Chip(
-      avatar: Icon(icon, size: 16),
+      avatar: Icon(icon, size: 14),
       label: Text(label),
-      labelStyle: const TextStyle(fontSize: 12),
+      labelStyle: const TextStyle(fontSize: 11),
     );
   }
 
