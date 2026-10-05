@@ -133,44 +133,65 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 40)),
 
                     // User type selection
-                    Text(
-                      'Login as:',
-                      style: TextStyle(
-                        fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
-                        fontWeight: FontWeight.w600,
-                        color: theme.AppTheme.textPrimary,
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.responsiveSpacing(context, 20),
+                        horizontal: ResponsiveUtils.responsiveSpacing(context, 24),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
-                    ResponsiveRow(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildUserTypeButton(
-                          icon: Icons.school,
-                          label: 'Student',
-                          isSelected: true,
-                          onTap: () {
-                            // Continue with student login (default)
-                          },
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 16),
                         ),
-                        _buildUserTypeButton(
-                          icon: Icons.person,
-                          label: 'Teacher',
-                          isSelected: false,
-                          onTap: () {
-                            Get.toNamed('/teacher-login');
-                          },
+                        border: Border.all(
+                          color: theme.AppTheme.primaryColor.withValues(alpha: 0.2),
+                          width: 2,
                         ),
-                        _buildUserTypeButton(
-                          icon: Icons.admin_panel_settings,
-                          label: 'Admin',
-                          isSelected: false,
-                          onTap: () {
-                            Get.toNamed('/admin-login');
-                          },
-                        ),
-                      ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'LOGIN AS',
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                              fontWeight: FontWeight.bold,
+                              color: theme.AppTheme.primaryColor,
+                              letterSpacing: 2,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 20)),
+                          ResponsiveRow(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _buildUserTypeButton(
+                                icon: Icons.school,
+                                label: 'Student',
+                                isSelected: true,
+                                onTap: () {
+                                  // Continue with student login (default)
+                                },
+                              ),
+                              _buildUserTypeButton(
+                                icon: Icons.person,
+                                label: 'Teacher',
+                                isSelected: false,
+                                onTap: () {
+                                  Get.toNamed('/teacher-login');
+                                },
+                              ),
+                              _buildUserTypeButton(
+                                icon: Icons.admin_panel_settings,
+                                label: 'Admin',
+                                isSelected: false,
+                                onTap: () {
+                                  Get.toNamed('/admin-login');
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 32)),
 
@@ -390,35 +411,38 @@ class _LoginScreenState extends State<LoginScreen> {
     return Builder(
       builder: (context) => Flexible(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.responsiveSpacing(context, 4)),
+          padding: EdgeInsets.symmetric(horizontal: ResponsiveUtils.responsiveSpacing(context, 6)),
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 12)),
+            borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
             child: Container(
-              padding: EdgeInsets.symmetric(vertical: ResponsiveUtils.responsiveSpacing(context, 16)),
+              padding: EdgeInsets.symmetric(
+                vertical: ResponsiveUtils.responsiveSpacing(context, 20),
+                horizontal: ResponsiveUtils.responsiveSpacing(context, 16),
+              ),
               decoration: BoxDecoration(
                 gradient: isSelected ? theme.AppTheme.primaryGradient : null,
                 color: isSelected ? null : Colors.white,
-                borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 12)),
+                borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
                 border: Border.all(
                   color: isSelected
                       ? Colors.transparent
-                      : theme.AppTheme.dividerColor,
-                  width: 2,
+                      : theme.AppTheme.primaryColor.withValues(alpha: 0.3),
+                  width: 2.5,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: theme.AppTheme.primaryColor.withValues(alpha:0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: theme.AppTheme.primaryColor.withValues(alpha: 0.4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 6),
                         ),
                       ]
                     : [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha:0.05),
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
               ),
@@ -426,17 +450,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Icon(
                     icon,
-                    size: ResponsiveUtils.responsiveIconSize(context, 28),
+                    size: ResponsiveUtils.responsiveIconSize(context, 36),
                     color: isSelected
                         ? Colors.white
                         : theme.AppTheme.primaryColor,
                   ),
-                  SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 8)),
+                  SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: ResponsiveUtils.responsiveFontSize(context, 13),
-                      fontWeight: FontWeight.w600,
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 15),
+                      fontWeight: FontWeight.bold,
                       color: isSelected
                           ? Colors.white
                           : theme.AppTheme.textPrimary,
