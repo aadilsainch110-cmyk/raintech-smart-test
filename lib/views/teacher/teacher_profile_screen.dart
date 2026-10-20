@@ -12,7 +12,13 @@ class TeacherProfileScreen extends StatelessWidget {
     final authController = Get.find<AuthController>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('My Profile')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
+        title: const Text('My Profile'),
+      ),
       body: Obx(
         () => authController.currentUser == null
             ? const Center(child: CircularProgressIndicator())
@@ -44,7 +50,7 @@ class TeacherProfileScreen extends StatelessWidget {
                     Center(
                       child: Text(
                         authController.currentUser!.name,
-                        style: TextStyle(
+                        style: TextStyle(backgroundColor: Colors.white,
                           fontSize: ResponsiveUtils.responsiveFontSize(
                             context,
                             24,
@@ -62,11 +68,10 @@ class TeacherProfileScreen extends StatelessWidget {
                           authController.currentUser!.role.toUpperCase(),
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        backgroundColor: AppTheme.primaryColor.withValues(
-                          alpha: 0.1,
+                        backgroundColor: AppTheme.primaryColor,
                         ),
                       ),
-                    ),
+
                     SizedBox(
                       height: ResponsiveUtils.responsiveSpacing(context, 32),
                     ),

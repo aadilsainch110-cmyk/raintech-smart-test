@@ -35,8 +35,26 @@ service cloud.firestore {
     }
     
     function isEnrolledInCourse(courseId) {
-      return isAuthenticated() && 
+      return isAuthenticated() &&
              exists(/databases/$(database)/documents/enrollments/$(request.auth.uid)/$(courseId));
+    }
+
+    function isTestEnrolled(testId) {
+      return isAuthenticated() &&
+             isEnrolledInCourse(get(/databases/$(database)/documents/tests/$(testId)).data.courseId);
+    }
+
+    function isTestPublished(testId) {
+      return get(/databases/$(database)/documents/tests/$(testId)).data.status == 'published';
+    }
+
+    // Question collection validation helper
+    function canAccessQuestions(testId) {
+      return isAuthenticated() && isActive() &&
+             (hasRole('admin') ||
+              hasRole('teacher') ||
+              isTestOwner(testId) ||
+              (isTestPublished(testId) && isTestEnrolled(testId)));
     }
     
     // Users collection
@@ -83,15 +101,12 @@ service cloud.firestore {
       allow delete: if hasRole('admin') || isTestOwner(testId);
     }
     
-    // Questions collection
-    match /tests/{testId}/questions/{questionId} {
-      allow read: if isAuthenticated() && isActive() && 
-                     (hasRole('admin') || 
-                      hasRole('teacher') || 
-                      isTestOwner(testId));
+    // Questions collection (top-level collection with testId field)
+    match /questions/{questionId} {
+      allow read: if canAccessQuestions(resource.data.testId);
       allow create: if hasRole('teacher') || hasRole('admin');
-      allow update: if hasRole('admin') || isTestOwner(testId);
-      allow delete: if hasRole('admin') || isTestOwner(testId);
+      allow update: if hasRole('admin') || isTestOwner(resource.data.testId);
+      allow delete: if hasRole('admin') || isTestOwner(resource.data.testId);
     }
     
     // Attempts collection
@@ -139,7 +154,7 @@ service cloud.firestore {
 ### 2. Role-Based Access Control
 - **Admin**: Full access to all collections except user passwords
 - **Teacher**: Access to tests they created, their questions, and related data
-- **Student**: Read access to enrolled courses, tests, and their own results
+- **Student**: Read access to enrolled courses, published tests, and their own results
 
 ### 3. Account Status Validation
 - Only active accounts (isActive == true) can access data
@@ -154,11 +169,16 @@ service cloud.firestore {
 - Students can only access tests for courses they're enrolled in
 - Enrollment is validated before granting test access
 
-### 6. Immutable Data
+### 6. Published Test Validation
+- Students can only read questions from published tests
+- Draft and closed tests are inaccessible to students
+- This ensures students only see tests that teachers have explicitly published
+
+### 7. Immutable Data
 - Test attempts cannot be modified after creation
 - Ensures integrity of submission data
 
-### 7. System-Created Data
+### 8. System-Created Data
 - Results are created by the system (teachers/admin) after test submission
 - Direct student creation of results is prevented
 
@@ -195,8 +215,12 @@ service cloud.firestore {
 // Student should be able to:
 - View their own profile
 - View enrolled courses
+- View published tests for enrolled courses
+- Read questions from published tests for enrolled courses
 - Take tests for enrolled courses
 - View their own results
+- NOT access draft or closed tests
+- NOT access questions from unpublished tests
 - NOT access other students' data
 - NOT modify test data
 ```

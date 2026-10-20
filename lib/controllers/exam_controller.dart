@@ -17,7 +17,7 @@ class ExamController extends GetxController {
   final RxBool isSubmitted = false.obs;
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
-  
+
   Timer? _timer;
   DateTime? _testStartTime;
 
@@ -84,17 +84,22 @@ class ExamController extends GetxController {
 
   Future<bool> submitExam({required String studentId}) async {
     if (isSubmitted.value) return false;
-    
+
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      
+
+      print('DEBUG: ExamController.submitExam called');
+      print('  - Student ID (Firebase UID): $studentId');
+      print('  - Test ID: ${currentTest.value!.id}');
+      print('  - Answers count: ${answers.length}');
+
       _timer?.cancel();
-      
+
       final testStartTime = _testStartTime ?? DateTime.now();
       final submittedAt = DateTime.now();
       final timeTaken = submittedAt.difference(testStartTime).inSeconds;
-      
+
       final attempt = AttemptModel(
         testId: currentTest.value!.id!,
         studentId: studentId,
@@ -103,15 +108,21 @@ class ExamController extends GetxController {
         submittedAt: submittedAt,
         timeTakenSeconds: timeTaken,
       );
-      
+
+      print('DEBUG: Saving attempt to Firestore');
+      print('  - Attempt testId: ${attempt.testId}');
+      print('  - Attempt studentId: ${attempt.studentId}');
+
       await _firestoreService.addDocument(
         collectionPath: 'attempts',
         data: attempt.toJson(),
       );
-      
+
+      print('DEBUG: Attempt saved successfully');
       isSubmitted.value = true;
       return true;
     } catch (e) {
+      print('DEBUG: Error in submitExam: $e');
       errorMessage.value = e.toString();
       return false;
     } finally {

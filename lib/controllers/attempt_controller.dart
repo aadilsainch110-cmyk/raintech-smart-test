@@ -24,7 +24,7 @@ class AttemptController extends GetxController {
 
       attempts.value = snapshot.docs.map((doc) {
         return AttemptModel.fromJson(
-          doc.data() as Map<String, dynamic>,
+          Map<String, dynamic>.from(doc.data() as Map),
           id: doc.id,
         );
       }).toList();
@@ -50,7 +50,7 @@ class AttemptController extends GetxController {
 
       attempts.value = snapshot.docs.map((doc) {
         return AttemptModel.fromJson(
-          doc.data() as Map<String, dynamic>,
+          Map<String, dynamic>.from(doc.data() as Map),
           id: doc.id,
         );
       }).toList();
@@ -72,7 +72,7 @@ class AttemptController extends GetxController {
 
       attempts.value = snapshot.docs.map((doc) {
         return AttemptModel.fromJson(
-          doc.data() as Map<String, dynamic>,
+          Map<String, dynamic>.from(doc.data() as Map),
           id: doc.id,
         );
       }).toList();
@@ -129,9 +129,18 @@ class AttemptController extends GetxController {
       errorMessage.value = '';
 
       final data = <String, dynamic>{};
-      if (answers != null) data['answers'] = answers;
-      if (submittedAt != null) data['submittedAt'] = submittedAt.toIso8601String();
-      if (timeTakenSeconds != null) data['timeTakenSeconds'] = timeTakenSeconds;
+
+      if (answers != null) {
+        data['answers'] = answers;
+      }
+
+      if (submittedAt != null) {
+        data['submittedAt'] = submittedAt.toIso8601String();
+      }
+
+      if (timeTakenSeconds != null) {
+        data['timeTakenSeconds'] = timeTakenSeconds;
+      }
 
       await _firestoreService.updateDocument(
         collectionPath: 'attempts',
@@ -169,7 +178,9 @@ class AttemptController extends GetxController {
 
   AttemptModel? getAttemptById(String attemptId) {
     try {
-      return attempts.firstWhere((attempt) => attempt.id == attemptId);
+      return attempts.firstWhere(
+        (attempt) => attempt.id == attemptId,
+      );
     } catch (e) {
       return null;
     }
@@ -181,20 +192,53 @@ class AttemptController extends GetxController {
   }) {
     try {
       return attempts.firstWhere(
-        (attempt) => attempt.testId == testId && attempt.studentId == studentId,
+        (attempt) =>
+            attempt.testId == testId &&
+            attempt.studentId == studentId,
       );
     } catch (e) {
       return null;
     }
   }
 
+  Future<bool> hasStudentAttemptedTest({
+    required String testId,
+    required String studentId,
+  }) async {
+    try {
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'attempts',
+        field: 'studentId',
+        value: studentId,
+      );
+
+      final snapshot = await query.get();
+
+      for (final doc in snapshot.docs) {
+        final data = Map<String, dynamic>.from(
+          doc.data() as Map,
+        );
+
+        if (data['testId']?.toString() == testId) {
+          return data['submittedAt'] != null;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   List<AttemptModel> getTestAttempts(String testId) {
-    return attempts.where((attempt) => attempt.testId == testId).toList();
+    return attempts
+        .where((attempt) => attempt.testId == testId)
+        .toList();
   }
 
   Map<String, dynamic> getTestStatistics({required String testId}) {
     final testAttempts = getTestAttempts(testId);
-    
+
     if (testAttempts.isEmpty) {
       return {
         'totalAttempts': 0,
@@ -204,14 +248,18 @@ class AttemptController extends GetxController {
       };
     }
 
-    final completedAttempts = testAttempts.where((a) => a.submittedAt != null).length;
-    final inProgressAttempts = testAttempts.length - completedAttempts;
-    
+    final completedAttempts = testAttempts
+        .where((a) => a.submittedAt != null)
+        .length;
+
+    final inProgressAttempts =
+        testAttempts.length - completedAttempts;
+
     final totalTimes = testAttempts
         .where((a) => a.timeTakenSeconds != null)
         .map((a) => a.timeTakenSeconds!)
         .toList();
-    
+
     final averageTime = totalTimes.isNotEmpty
         ? totalTimes.reduce((a, b) => a + b) / totalTimes.length
         : 0.0;

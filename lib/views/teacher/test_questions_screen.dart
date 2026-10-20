@@ -22,11 +22,27 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
   final QuestionController _questionController = Get.put(QuestionController());
 
   TestModel? _test;
+  final List<Map<String, TextEditingController>> _questionControllers = [];
+  final List<GlobalKey<FormState>> _formKeys = [];
+  bool _isUploadingCSV = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _isUploadingCSV = false;
+    for (final controllers in _questionControllers) {
+      for (final controller in controllers.values) {
+        controller.dispose();
+      }
+    }
+    _questionControllers.clear();
+    _formKeys.clear();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -235,6 +251,322 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
     optionDController.dispose();
     correctAnswerController.dispose();
     marksController.dispose();
+  }
+
+  Future<void> _showBulkAddQuestionsDialog() async {
+    _questionControllers.clear();
+    _formKeys.clear();
+
+    final result = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Add Multiple Questions'),
+        content: SizedBox(
+          width: ResponsiveUtils.responsiveSpacing(context, 600),
+          height: ResponsiveUtils.responsiveSpacing(context, 500),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: _questionControllers.length,
+                      itemBuilder: (context, index) {
+                        final controllers = _questionControllers[index];
+                        final formKey = _formKeys[index];
+
+                        return Card(
+                          margin: EdgeInsets.only(
+                            bottom: ResponsiveUtils.responsiveSpacing(context, 12),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(
+                              ResponsiveUtils.responsiveSpacing(context, 12),
+                            ),
+                            child: Form(
+                              key: formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Question ${index + 1}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () {
+                                          setState(() {
+                                            _questionControllers.removeAt(index);
+                                            _formKeys.removeAt(index);
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveUtils.responsiveSpacing(context, 8),
+                                  ),
+                                  TextFormField(
+                                    controller: controllers['question']!,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Question',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    maxLines: 2,
+                                    validator: (value) {
+                                      if (value == null || value.trim().isEmpty) {
+                                        return 'Required';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveUtils.responsiveSpacing(context, 8),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controllers['optionA']!,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Option A',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null || value.trim().isEmpty) {
+                                              return 'Required';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: ResponsiveUtils.responsiveSpacing(context, 8),
+                                      ),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controllers['optionB']!,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Option B',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null || value.trim().isEmpty) {
+                                              return 'Required';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveUtils.responsiveSpacing(context, 8),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controllers['optionC']!,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Option C',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null || value.trim().isEmpty) {
+                                              return 'Required';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: ResponsiveUtils.responsiveSpacing(context, 8),
+                                      ),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controllers['optionD']!,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Option D',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          validator: (value) {
+                                            if (value == null || value.trim().isEmpty) {
+                                              return 'Required';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    height: ResponsiveUtils.responsiveSpacing(context, 8),
+                                  ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controllers['correctAnswer']!,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Correct Answer (A/B/C/D)',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          maxLength: 1,
+                                          textCapitalization: TextCapitalization.characters,
+                                          validator: (value) {
+                                            if (value == null || value.trim().isEmpty) {
+                                              return 'Required';
+                                            }
+                                            if (!['A', 'B', 'C', 'D'].contains(value.trim().toUpperCase())) {
+                                              return 'Must be A, B, C, or D';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width: ResponsiveUtils.responsiveSpacing(context, 8),
+                                      ),
+                                      Expanded(
+                                        child: TextFormField(
+                                          controller: controllers['marks']!,
+                                          decoration: const InputDecoration(
+                                            labelText: 'Marks',
+                                            border: OutlineInputBorder(),
+                                          ),
+                                          keyboardType: TextInputType.number,
+                                          validator: (value) {
+                                            if (value == null || value.trim().isEmpty) {
+                                              return 'Required';
+                                            }
+                                            final marks = int.tryParse(value);
+                                            if (marks == null || marks <= 0) {
+                                              return 'Invalid marks';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _questionControllers.add({
+                          'question': TextEditingController(),
+                          'optionA': TextEditingController(),
+                          'optionB': TextEditingController(),
+                          'optionC': TextEditingController(),
+                          'optionD': TextEditingController(),
+                          'correctAnswer': TextEditingController(),
+                          'marks': TextEditingController(text: '1'),
+                        });
+                        _formKeys.add(GlobalKey<FormState>());
+                      });
+                    },
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add Question'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (_questionControllers.isEmpty) {
+                Get.snackbar(
+                  'Error',
+                  'Please add at least one question',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppTheme.errorColor,
+                  colorText: Colors.white,
+                );
+                return;
+              }
+
+              bool allValid = true;
+              for (final formKey in _formKeys) {
+                if (!formKey.currentState!.validate()) {
+                  allValid = false;
+                }
+              }
+
+              if (allValid) {
+                Get.back(result: true);
+              }
+            },
+            child: const Text('Add All Questions'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      final questionsData = _questionControllers.map((controllers) {
+        return {
+          'question': controllers['question']!.text.trim(),
+          'optionA': controllers['optionA']!.text.trim(),
+          'optionB': controllers['optionB']!.text.trim(),
+          'optionC': controllers['optionC']!.text.trim(),
+          'optionD': controllers['optionD']!.text.trim(),
+          'correctAnswer': controllers['correctAnswer']!.text.trim().toUpperCase(),
+          'marks': int.parse(controllers['marks']!.text),
+        };
+      }).toList();
+
+      final success = await _questionController.addMultipleQuestions(
+        testId: _test!.id!,
+        questionsData: questionsData,
+      );
+
+      if (success) {
+        await _loadData();
+        Get.snackbar(
+          'Success',
+          'Questions Added',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppTheme.successColor,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to add questions. Please try again.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: AppTheme.errorColor,
+          colorText: Colors.white,
+        );
+      }
+    }
+
+    for (final controllers in _questionControllers) {
+      for (final controller in controllers.values) {
+        controller.dispose();
+      }
+    }
+    _questionControllers.clear();
+    _formKeys.clear();
   }
 
   Future<void> _showEditQuestionDialog(QuestionModel question) async {
@@ -467,6 +799,18 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
   }
 
   Future<void> _importQuestionsFromCSV() async {
+    // Prevent multiple simultaneous uploads
+    if (_isUploadingCSV) {
+      Get.snackbar(
+        'Upload in Progress',
+        'Please wait for the current upload to complete.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorColor,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
     print('DEBUG: _importQuestionsFromCSV called');
     try {
       print('DEBUG: Opening file picker');
@@ -495,7 +839,6 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
         }
 
         print('DEBUG: CSV data read, length: ${csvData.length}');
-        print('DEBUG: First 200 chars of CSV: ${csvData.substring(0, csvData.length > 200 ? 200 : csvData.length)}');
 
         final rows = const CsvToListConverter().convert(csvData);
         print('DEBUG: CSV parsed, rows: ${rows.length}');
@@ -513,15 +856,14 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
           throw Exception('CSV file has no data rows (only header)');
         }
 
-        int importedCount = 0;
-        int skippedCount = 0;
-        List<String> errors = [];
+        // VALIDATE ALL QUESTIONS FIRST (no loading during validation)
+        print('DEBUG: Validating all questions...');
+        final List<Map<String, dynamic>> validQuestions = [];
+        final List<String> errors = [];
 
         for (int i = startIndex; i < rows.length; i++) {
           final row = rows[i];
-          print('DEBUG: Processing row $i, columns: ${row.length}');
-          print('DEBUG: Row data: $row');
-          
+
           if (row.length >= 6) {
             // Validate row data
             final question = row[0]?.toString().trim() ?? '';
@@ -532,63 +874,89 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
             final correctAnswer = row[5]?.toString().trim().toUpperCase() ?? '';
             final marks = row.length > 6 ? int.tryParse(row[6].toString()) ?? 1 : 1;
 
-            print('DEBUG: Question: $question');
-            print('DEBUG: Correct Answer: $correctAnswer');
-
             if (question.isEmpty) {
-              errors.add('Row $i: Question is empty');
-              skippedCount++;
+              errors.add('Row ${i + 1}: Question is empty');
+              continue;
+            }
+
+            if (optionA.isEmpty || optionB.isEmpty || optionC.isEmpty || optionD.isEmpty) {
+              errors.add('Row ${i + 1}: All options are required');
               continue;
             }
 
             if (!['A', 'B', 'C', 'D'].contains(correctAnswer)) {
-              errors.add('Row $i: Invalid correct answer "$correctAnswer" (must be A, B, C, or D)');
-              skippedCount++;
+              errors.add('Row ${i + 1}: Invalid correct answer "$correctAnswer" (must be A, B, C, or D)');
               continue;
             }
 
-            print('DEBUG: Row has enough columns, adding question');
-            final success = await _questionController.addQuestion(
-              testId: _test!.id!,
-              question: question,
-              optionA: optionA,
-              optionB: optionB,
-              optionC: optionC,
-              optionD: optionD,
-              correctAnswer: correctAnswer,
-              marks: marks,
-              order: _questionController.questions.length + 1,
-            );
-            if (success) {
-              importedCount++;
-              print('DEBUG: Question $i imported successfully');
-            } else {
-              print('DEBUG: Question $i import failed - controller returned false');
-              errors.add('Row $i: Failed to add question (controller error)');
-              skippedCount++;
-            }
+            // Add to valid questions list
+            validQuestions.add({
+              'question': question,
+              'optionA': optionA,
+              'optionB': optionB,
+              'optionC': optionC,
+              'optionD': optionD,
+              'correctAnswer': correctAnswer,
+              'marks': marks,
+            });
           } else {
-            print('DEBUG: Row $i skipped - not enough columns (got ${row.length}, need 6)');
-            errors.add('Row $i: Not enough columns (got ${row.length}, need 6)');
-            skippedCount++;
+            errors.add('Row ${i + 1}: Not enough columns (got ${row.length}, need 6)');
           }
         }
 
-        print('DEBUG: Total imported: $importedCount, skipped: $skippedCount');
+        print('DEBUG: Validation complete. Valid questions: ${validQuestions.length}, Errors: ${errors.length}');
+
+        if (validQuestions.isEmpty) {
+          throw Exception('No valid questions found in CSV. Errors: ${errors.take(3).join("; ")}${errors.length > 3 ? "..." : ""}');
+        }
+
+        // NOW SHOW LOADING AND UPLOAD IN BATCH
+        setState(() {
+          _isUploadingCSV = true;
+        });
+
+        print('DEBUG: Starting batch upload of ${validQuestions.length} questions');
+        final success = await _questionController.addMultipleQuestions(
+          testId: _test!.id!,
+          questionsData: validQuestions,
+        );
+
+        print('DEBUG: Batch upload completed. Success: $success');
+
+        setState(() {
+          _isUploadingCSV = false;
+        });
+
+        // Refresh question list only once after batch upload
         await _loadData();
 
-        if (importedCount > 0) {
+        if (success) {
           Get.snackbar(
             'Import Complete',
-            'Successfully imported $importedCount questions${skippedCount > 0 ? ' ($skippedCount skipped)' : ''}',
+            '${validQuestions.length} questions uploaded successfully.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppTheme.successColor,
             colorText: Colors.white,
+            duration: const Duration(seconds: 3),
           );
+
+          if (errors.isNotEmpty) {
+            // Show skipped questions warning
+            Future.delayed(const Duration(seconds: 1), () {
+              Get.snackbar(
+                'Some Rows Skipped',
+                '${errors.length} row(s) were skipped. ${errors.take(2).join("; ")}${errors.length > 2 ? "..." : ""}',
+                snackPosition: SnackPosition.BOTTOM,
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 4),
+              );
+            });
+          }
         } else {
           Get.snackbar(
             'Import Failed',
-            'No questions imported. Errors: ${errors.take(3).join("; ")}${errors.length > 3 ? "..." : ""}',
+            'Failed to upload questions. Please try again.',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: AppTheme.errorColor,
             colorText: Colors.white,
@@ -598,6 +966,9 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
       }
     } catch (e) {
       print('DEBUG: Exception: $e');
+      setState(() {
+        _isUploadingCSV = false;
+      });
       Get.snackbar(
         'Import Failed',
         'Error: ${e.toString()}',
@@ -613,93 +984,139 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
         title: Text(_test?.title ?? 'Test Questions'),
         actions: [
           IconButton(
             icon: const Icon(Icons.upload_file),
-            onPressed: _importQuestionsFromCSV,
+            onPressed: _isUploadingCSV ? null : _importQuestionsFromCSV,
             tooltip: 'Import from CSV',
           ),
           IconButton(
+            icon: const Icon(Icons.playlist_add),
+            onPressed: _isUploadingCSV ? null : _showBulkAddQuestionsDialog,
+            tooltip: 'Add Multiple Questions',
+          ),
+          IconButton(
             icon: const Icon(Icons.add),
-            onPressed: _showAddQuestionDialog,
+            onPressed: _isUploadingCSV ? null : _showAddQuestionDialog,
           ),
         ],
       ),
-      body: Obx(
-        () => _questionController.isLoading.value
-            ? const Center(child: CircularProgressIndicator())
-            : _questionController.questions.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.quiz_outlined,
-                      size: ResponsiveUtils.responsiveIconSize(context, 80),
-                      color: AppTheme.textSecondary,
-                    ),
-                    SizedBox(
-                      height: ResponsiveUtils.responsiveSpacing(context, 16),
-                    ),
-                    Text(
-                      'No questions yet',
-                      style: TextStyle(
-                        fontSize: ResponsiveUtils.responsiveFontSize(
-                          context,
-                          18,
+      body: Stack(
+        children: [
+          Obx(
+            () => _questionController.isLoading.value
+                ? const Center(child: CircularProgressIndicator())
+                : _questionController.questions.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.quiz_outlined,
+                          size: ResponsiveUtils.responsiveIconSize(context, 80),
+                          color: AppTheme.textSecondary,
                         ),
-                        color: AppTheme.textSecondary,
-                      ),
+                        SizedBox(
+                          height: ResponsiveUtils.responsiveSpacing(context, 16),
+                        ),
+                        Text(
+                          'No questions yet',
+                          style: TextStyle(
+                            fontSize: ResponsiveUtils.responsiveFontSize(
+                              context,
+                              18,
+                            ),
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                        SizedBox(
+                          height: ResponsiveUtils.responsiveSpacing(context, 16),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: _isUploadingCSV ? null : _showAddQuestionDialog,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add Question'),
+                            ),
+                            SizedBox(
+                              width: ResponsiveUtils.responsiveSpacing(context, 16),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: _isUploadingCSV ? null : _showBulkAddQuestionsDialog,
+                              icon: const Icon(Icons.playlist_add),
+                              label: const Text('Add Multiple'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    SizedBox(
-                      height: ResponsiveUtils.responsiveSpacing(context, 16),
+                  )
+                : ListView.builder(
+                    padding: ResponsiveUtils.responsivePadding(context),
+                    itemCount: _questionController.questions.length,
+                    itemBuilder: (context, index) {
+                      final question = _questionController.questions[index];
+                      return Card(
+                        margin: EdgeInsets.only(
+                          bottom: ResponsiveUtils.responsiveSpacing(context, 12),
+                        ),
+                        child: ListTile(
+                          leading: CircleAvatar(child: Text('${index + 1}')),
+                          title: Text(
+                            question.question,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            'Marks: ${question.marks} • Correct: ${question.correctAnswer}',
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: _isUploadingCSV ? null : () => _showEditQuestionDialog(question),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete),
+                                color: AppTheme.errorColor,
+                                onPressed: _isUploadingCSV ? null : () => _deleteQuestion(question),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          // CSV upload loading overlay
+          if (_isUploadingCSV)
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Uploading questions...'),
+                      ],
                     ),
-                    ElevatedButton.icon(
-                      onPressed: _showAddQuestionDialog,
-                      icon: const Icon(Icons.add),
-                      label: const Text('Add Question'),
-                    ),
-                  ],
+                  ),
                 ),
-              )
-            : ListView.builder(
-                padding: ResponsiveUtils.responsivePadding(context),
-                itemCount: _questionController.questions.length,
-                itemBuilder: (context, index) {
-                  final question = _questionController.questions[index];
-                  return Card(
-                    margin: EdgeInsets.only(
-                      bottom: ResponsiveUtils.responsiveSpacing(context, 12),
-                    ),
-                    child: ListTile(
-                      leading: CircleAvatar(child: Text('${index + 1}')),
-                      title: Text(
-                        question.question,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        'Marks: ${question.marks} • Correct: ${question.correctAnswer}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () => _showEditQuestionDialog(question),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete),
-                            color: AppTheme.errorColor,
-                            onPressed: () => _deleteQuestion(question),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
               ),
+            ),
+        ],
       ),
     );
   }

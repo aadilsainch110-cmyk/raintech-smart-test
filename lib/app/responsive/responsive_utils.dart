@@ -1,24 +1,24 @@
 import 'package:flutter/material.dart';
 
 class ResponsiveUtils {
-  // Responsive breakpoints
+  // Responsive breakpoints - Updated to match requirements
   static const double mobileScreen = 600;
-  static const double tabletScreen = 900;
-  static const double desktopScreen = 1200;
+  static const double tabletScreen = 1024;
+  static const double desktopScreen = 1024;
 
-  /// Check if device is mobile
+  /// Check if device is mobile (below 600px)
   static bool isMobile(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     return width < mobileScreen;
   }
 
-  /// Check if device is tablet
+  /// Check if device is tablet (600-1023px)
   static bool isTablet(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    return width >= mobileScreen && width < desktopScreen;
+    return width >= mobileScreen && width < tabletScreen;
   }
 
-  /// Check if device is desktop
+  /// Check if device is desktop (1024px and above)
   static bool isDesktop(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     return width >= desktopScreen;
@@ -64,9 +64,9 @@ class ResponsiveUtils {
   /// Get responsive grid columns
   static int getGridColumns(BuildContext context) {
     if (isMobile(context)) {
-      return 1;
-    } else if (isTablet(context)) {
       return 2;
+    } else if (isTablet(context)) {
+      return 4;
     } else {
       return 4;
     }
@@ -110,9 +110,9 @@ class ResponsiveUtils {
     if (isMobile(context)) {
       return double.infinity;
     } else if (isTablet(context)) {
-      return 1000;
+      return 950;
     } else {
-      return 1400;
+      return 1200;
     }
   }
 
@@ -136,5 +136,58 @@ class ResponsiveUtils {
     } else {
       return baseRadius * 1.2;
     }
+  }
+
+  /// Get responsive content width (centered with max width on desktop)
+  static Widget buildResponsiveContent({
+    required BuildContext context,
+    required Widget child,
+  }) {
+    if (isMobile(context)) {
+      return child;
+    } else {
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: getMaxWidth(context),
+          ),
+          child: child,
+        ),
+      );
+    }
+  }
+
+  /// Get responsive card grid layout
+  static Widget buildResponsiveGrid({
+    required BuildContext context,
+    required List<Widget> children,
+    required double childAspectRatio,
+    double? crossAxisSpacing,
+    double? mainAxisSpacing,
+  }) {
+    final spacing = crossAxisSpacing ?? responsiveSpacing(context, 16);
+    final mainSpacing = mainAxisSpacing ?? responsiveSpacing(context, 16);
+    final columns = getGridColumns(context);
+
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: mainSpacing,
+        childAspectRatio: childAspectRatio,
+      ),
+      itemCount: children.length,
+      itemBuilder: (context, index) => children[index],
+    );
+  }
+
+  /// Check if should use side navigation (desktop)
+  static bool useSideNavigation(BuildContext context) {
+    return isDesktop(context);
+  }
+
+  /// Check if should use bottom navigation (mobile)
+  static bool useBottomNavigation(BuildContext context) {
+    return isMobile(context);
   }
 }

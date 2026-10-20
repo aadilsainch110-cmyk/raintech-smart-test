@@ -1,20 +1,25 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../services/preferences_service.dart';
+import '../services/secret_code_service.dart';
 import '../app/routes/app_routes.dart';
 
 class AuthController extends GetxController {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
   final PreferencesService _prefsService = PreferencesService();
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   final Rx<User?> _firebaseUser = Rx<User?>(null);
   final Rx<UserModel?> _currentUser = Rx<UserModel?>(null);
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
+  final RxString generatedSecretCode = ''.obs;
   bool _hasNavigated = false; // Flag to prevent multiple navigations
 
   User? get firebaseUser => _firebaseUser.value;
@@ -41,6 +46,9 @@ class AuthController extends GetxController {
   Future<void> _loadUserData(String userId) async {
     try {
       isLoading.value = true;
+      print('DEBUG: Loading user data from Firestore');
+      print('  - Firebase UID: $userId');
+
       final doc = await _firestoreService.getDocument(
         collectionPath: 'users',
         documentId: userId,
@@ -51,6 +59,14 @@ class AuthController extends GetxController {
           doc.data() as Map<String, dynamic>,
           id: doc.id,
         );
+
+        print('DEBUG: User data loaded successfully');
+        print('  - Firebase UID (id): ${_currentUser.value?.id}');
+        print('  - Custom Student ID (studentId): ${_currentUser.value?.studentId ?? "NULL"}');
+        print('  - Name: ${_currentUser.value?.name}');
+        print('  - Email: ${_currentUser.value?.email}');
+        print('  - Role: ${_currentUser.value?.role}');
+        print('  - Address: ${_currentUser.value?.address ?? "NULL"}');
 
         if (_currentUser.value?.isActive == false) {
           await signOut();
@@ -67,16 +83,46 @@ class AuthController extends GetxController {
           _navigateBasedOnRole();
           _hasNavigated = true;
         }
+      } else {
+        print('DEBUG: User document does not exist for UID: $userId');
       }
     } catch (e) {
+      print('DEBUG: Error loading user data: $e');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
 
+  Future<void> refreshUserData() async {
+    if (_firebaseUser.value != null) {
+      _hasNavigated = false; // Reset flag to allow re-navigation
+      await _loadUserData(_firebaseUser.value!.uid);
+    }
+  }
+
   void _navigateBasedOnRole() {
     final role = _currentUser.value?.role;
+    final approvalStatus = _currentUser.value?.approvalStatus ?? 'pending';
+
+    // Check approval status for student and teacher
+    if (role == 'student' || role == 'teacher') {
+      if (approvalStatus == 'pending') {
+        Get.offAllNamed(Routes.PENDING_APPROVAL);
+        return;
+      } else if (approvalStatus == 'rejected') {
+        Get.offAllNamed(Routes.LOGIN);
+        Get.snackbar(
+          'Account Rejected',
+          'Your account has been rejected by Admin.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+        return;
+      }
+    }
+
     switch (role) {
       case 'student':
         Get.offAllNamed(Routes.STUDENT_HOME);
@@ -123,43 +169,174 @@ class AuthController extends GetxController {
     }
   }
 
+  Future<bool> signInWithSecretCode({required String secretCode}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      // Validate secret code format (exactly 6 digits)
+      if (!SecretCodeService.isValidSecretCodeFormat(secretCode)) {
+        errorMessage.value = 'Secret code must be exactly 6 digits.';
+        return false;
+      }
+
+      // Call Cloud Function for secure verification
+      final result = await _functions.httpsCallable('verifySecretCode').call({
+        'secretCode': secretCode,
+      });
+
+      final userData = result.data as Map<String, dynamic>;
+
+      // Set current user
+      _currentUser.value = UserModel.fromJson(
+        {
+          'name': userData['name'],
+          'email': userData['email'],
+          'role': userData['role'],
+          'isActive': userData['isActive'],
+          'approvalStatus': userData['approvalStatus'],
+        },
+        id: userData['userId'],
+      );
+
+      // Save login state
+      await _prefsService.setLoginState(
+        isLoggedIn: true,
+        userRole: userData['role'],
+        userId: userData['userId'],
+      );
+
+      // Navigate based on role
+      _hasNavigated = false;
+      _navigateBasedOnRole();
+      _hasNavigated = true;
+
+      return true;
+    } on FirebaseFunctionsException catch (e) {
+      // Handle Cloud Function errors
+      switch (e.code) {
+        case 'invalid-argument':
+          errorMessage.value = e.message ?? 'Invalid secret code format.';
+          break;
+        case 'not-found':
+          errorMessage.value = e.message ?? 'Invalid secret code.';
+          break;
+        case 'permission-denied':
+          errorMessage.value = e.message ?? 'Access denied.';
+          break;
+        case 'resource-exhausted':
+          errorMessage.value = e.message ?? 'Too many attempts. Please try again later.';
+          break;
+        default:
+          errorMessage.value = e.message ?? 'An error occurred. Please try again.';
+      }
+      return false;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<bool> signUp({
     required String name,
     required String email,
     required String password,
     String? phone,
+    String? address,
     String? studentId,
     String? classId,
     String? shiftId,
     String role = 'student',
+    String? manualSecretCode, // Optional manually generated secret code
   }) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      generatedSecretCode.value = '';
 
       final userCredential = await _authService.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
+      // Use manual secret code if provided, otherwise generate one
+      String secretCode;
+      if (manualSecretCode != null && manualSecretCode.isNotEmpty) {
+        // Validate manual secret code format (exactly 6 digits)
+        if (!SecretCodeService.isValidSecretCodeFormat(manualSecretCode)) {
+          errorMessage.value = 'Secret code must be exactly 6 digits.';
+          return false;
+        }
+        secretCode = manualSecretCode;
+        generatedSecretCode.value = secretCode;
+      } else {
+        // Generate unique secret code
+        bool isUnique = false;
+        int attempts = 0;
+        final maxAttempts = 10;
+
+        while (!isUnique && attempts < maxAttempts) {
+          secretCode = SecretCodeService.generateSecretCode(role: role);
+
+          // Check if this code already exists
+          final query = _firestoreService.queryWhereEqualTo(
+            collectionPath: 'users',
+            field: 'secretCode',
+            value: secretCode,
+          );
+
+          final snapshot = await query.get();
+          if (snapshot.docs.isEmpty) {
+            isUnique = true;
+            generatedSecretCode.value = secretCode;
+          } else {
+            attempts++;
+          }
+        }
+
+        if (!isUnique) {
+          errorMessage.value = 'Failed to generate unique secret code. Please try again.';
+          return false;
+        }
+      }
+
+      // Set approval status based on role
+      final approvalStatus = role == 'admin' ? 'approved' : 'pending';
+
       final userModel = UserModel(
         id: userCredential.user?.uid,
         name: name,
         email: email,
         phone: phone,
+        address: address,
         role: role,
         studentId: studentId,
         classId: classId,
         shiftId: shiftId,
         isActive: true,
+        approvalStatus: approvalStatus,
         createdAt: DateTime.now(),
+        secretCode: generatedSecretCode.value,
       );
+
+      print('DEBUG: Saving user to Firestore');
+      print('  - Firebase UID (id): ${userModel.id}');
+      print('  - Custom Student ID (studentId): ${userModel.studentId ?? "NULL"}');
+      print('  - Name: ${userModel.name}');
+      print('  - Email: ${userModel.email}');
+      print('  - Role: ${userModel.role}');
+      print('  - Address: ${userModel.address ?? "NULL"}');
+      print('  - Secret Code: ${userModel.secretCode}');
 
       await _firestoreService.setDocument(
         collectionPath: 'users',
         documentId: userCredential.user!.uid,
         data: userModel.toJson(),
       );
+
+      print('DEBUG: User saved successfully');
 
       await _authService.updateDisplayName(displayName: name);
 
@@ -212,6 +389,7 @@ class AuthController extends GetxController {
       await _authService.signOut();
       _currentUser.value = null;
       _hasNavigated = false; // Reset navigation flag
+      generatedSecretCode.value = '';
       await _prefsService.clearLoginState(); // Clear saved login state
       Get.offAllNamed(Routes.LOGIN);
     } catch (e) {

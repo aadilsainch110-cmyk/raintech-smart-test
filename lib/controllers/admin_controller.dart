@@ -15,6 +15,10 @@ class AdminController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
 
+  final RxList<UserModel> pendingUsers = <UserModel>[].obs;
+  final RxList<UserModel> approvedUsers = <UserModel>[].obs;
+  final RxList<UserModel> rejectedUsers = <UserModel>[].obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -40,11 +44,34 @@ class AdminController extends GetxController {
           id: doc.id,
         );
       }).toList();
+
+      // Update filtered lists
+      _updateFilteredUsers();
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void _updateFilteredUsers() {
+    pendingUsers.value = users
+        .where((user) =>
+            user.approvalStatus == 'pending' &&
+            (user.role == 'student' || user.role == 'teacher'))
+        .toList();
+
+    approvedUsers.value = users
+        .where((user) =>
+            user.approvalStatus == 'approved' &&
+            (user.role == 'student' || user.role == 'teacher'))
+        .toList();
+
+    rejectedUsers.value = users
+        .where((user) =>
+            user.approvalStatus == 'rejected' &&
+            (user.role == 'student' || user.role == 'teacher'))
+        .toList();
   }
 
   Future<void> fetchAllClasses() async {
@@ -275,6 +302,7 @@ class AdminController extends GetxController {
     String? shiftId,
     String? role,
     bool? isActive,
+    String? approvalStatus,
   }) async {
     try {
       isLoading.value = true;
@@ -288,6 +316,7 @@ class AdminController extends GetxController {
       if (shiftId != null) data['shiftId'] = shiftId;
       if (role != null) data['role'] = role;
       if (isActive != null) data['isActive'] = isActive;
+      if (approvalStatus != null) data['approvalStatus'] = approvalStatus;
 
       await _firestoreService.updateDocument(
         collectionPath: 'users',
@@ -303,6 +332,69 @@ class AdminController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<bool> approveUser({required String userId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final user = getUserById(userId);
+      if (user == null) return false;
+
+      // Determine the actual role from user data or keep it as is
+      final actualRole = user.role;
+
+      await _firestoreService.updateDocument(
+        collectionPath: 'users',
+        documentId: userId,
+        data: {
+          'approvalStatus': 'approved',
+          'role': actualRole,
+        },
+      );
+
+      await fetchAllUsers();
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> rejectUser({required String userId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      await _firestoreService.updateDocument(
+        collectionPath: 'users',
+        documentId: userId,
+        data: {'approvalStatus': 'rejected'},
+      );
+
+      await fetchAllUsers();
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  List<UserModel> getPendingUsers() {
+    return pendingUsers;
+  }
+
+  List<UserModel> getApprovedUsers() {
+    return approvedUsers;
+  }
+
+  List<UserModel> getRejectedUsers() {
+    return rejectedUsers;
   }
 
   ClassModel? getClassById(String classId) {

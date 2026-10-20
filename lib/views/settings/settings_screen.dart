@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../controllers/auth_controller.dart';
 import '../../app/theme/app_theme.dart' as theme;
 import '../../app/responsive/responsive_utils.dart';
 
@@ -15,6 +16,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _darkModeEnabled = false;
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
+  final AuthController _authController = Get.find<AuthController>();
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Edit Profile',
             subtitle: 'Update your profile information',
             onTap: () {
-              Get.back();
+              Get.toNamed('/student/edit-profile');
             },
           ),
           _buildSettingsTile(
@@ -41,11 +43,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Change Password',
             subtitle: 'Update your password',
             onTap: () {
-              Get.snackbar(
-                'Password',
-                'Password change feature coming soon',
-                snackPosition: SnackPosition.BOTTOM,
-              );
+              Get.toNamed('/change-password');
             },
           ),
           _buildSettingsTile(
@@ -286,7 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ElevatedButton(
             onPressed: () {
               Get.back();
-              Get.offAllNamed('/login');
+              _authController.signOut();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: theme.AppTheme.errorColor,

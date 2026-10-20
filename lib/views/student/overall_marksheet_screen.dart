@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/result_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/test_controller.dart';
+import '../../controllers/course_controller.dart';
+import '../../services/pdf_service.dart';
 import '../../app/theme/app_theme.dart' as theme;
 
 class OverallMarksheetScreen extends StatefulWidget {
@@ -14,6 +17,9 @@ class OverallMarksheetScreen extends StatefulWidget {
 class _OverallMarksheetScreenState extends State<OverallMarksheetScreen> {
   final ResultController _resultController = Get.put(ResultController());
   final AuthController _authController = Get.find<AuthController>();
+  final TestController _testController = Get.put(TestController());
+  final CourseController _courseController = Get.put(CourseController());
+  final PdfService _pdfService = PdfService();
 
   @override
   void initState() {
@@ -33,6 +39,10 @@ class _OverallMarksheetScreenState extends State<OverallMarksheetScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
         title: const Text('Overall Marksheet'),
         actions: [
           IconButton(
@@ -389,15 +399,55 @@ class _OverallMarksheetScreenState extends State<OverallMarksheetScreen> {
 
   Future<void> _downloadOverallMarksheet() async {
     try {
-      // For now, show a message that this feature is coming
+      // Show loading indicator
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      // For overall marksheet, generate individual PDFs for each result
+      for (final result in _resultController.results) {
+        // Fetch test for this result
+        await _testController.fetchAllTests();
+        final test = _testController.tests.firstWhereOrNull(
+          (t) => t.id == result.testId,
+        );
+
+        if (test != null) {
+          // Fetch course for this test
+          await _courseController.fetchCourses();
+          final course = _courseController.courses.firstWhereOrNull(
+            (c) => c.id == test.courseId,
+          );
+
+          // Generate PDF for this result
+          await _pdfService.generateMarksheet(
+            result: result,
+            student: _authController.currentUser!,
+            test: test,
+            course: course,
+          );
+        }
+      }
+
+      // Close loading dialog
+      Get.back();
+
+      // Show success message
       Get.snackbar(
-        'Coming Soon',
-        'Overall marksheet PDF generation will be available soon',
+        'Success',
+        'Overall marksheet PDFs downloaded successfully',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: theme.AppTheme.primaryColor,
+        backgroundColor: Colors.green,
         colorText: Colors.white,
       );
     } catch (e) {
+      // Close loading dialog if open
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
+      // Show error message
       Get.snackbar(
         'Error',
         'Failed to download marksheet: ${e.toString()}',

@@ -4,11 +4,19 @@ import '../../controllers/result_controller.dart';
 import '../../controllers/test_controller.dart';
 import '../../controllers/student_controller.dart';
 import '../../controllers/auth_controller.dart';
+import '../../controllers/course_controller.dart';
+import '../../controllers/shift_controller.dart';
+import '../../controllers/class_controller.dart';
 import '../../services/pdf_service.dart';
 import '../../services/csv_service.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/responsive/responsive_utils.dart';
 import '../../app/routes/app_routes.dart';
+import '../../models/course_model.dart';
+import '../../models/shift_model.dart';
+import '../../models/class_model.dart';
+import '../../models/test_model.dart';
+import '../../models/result_model.dart';
 
 class TeacherResultsScreen extends StatefulWidget {
   const TeacherResultsScreen({super.key});
@@ -21,11 +29,19 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
   final ResultController _resultController = Get.put(ResultController());
   final TestController _testController = Get.put(TestController());
   final StudentController _studentController = Get.put(StudentController());
+  final CourseController _courseController = Get.put(CourseController());
+  final ShiftController _shiftController = Get.put(ShiftController());
+  final ClassController _classController = Get.put(ClassController());
   final AuthController _authController = Get.find<AuthController>();
   final PdfService _pdfService = PdfService();
   final CsvService _csvService = CsvService();
 
   int _selectedIndex = 4;
+  String? _selectedCourseId;
+  String? _selectedShiftId;
+  String? _selectedClassId;
+  String? _selectedTestId;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -33,84 +49,306 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
     _loadData();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadData() async {
     await Future.wait([
       _testController.fetchAllTests(),
       _studentController.fetchAllStudents(),
+      _courseController.fetchCourses(),
+      _shiftController.fetchShifts(),
+      _classController.fetchClasses(),
     ]);
+  }
+
+  List<TestModel> get _filteredTests {
+    var tests = _testController.tests.toList();
+
+    if (_selectedCourseId != null) {
+      tests = tests.where((t) => t.courseId == _selectedCourseId).toList();
+    }
+    if (_selectedShiftId != null) {
+      tests = tests.where((t) => t.shiftId == _selectedShiftId).toList();
+    }
+    if (_selectedClassId != null) {
+      tests = tests.where((t) => t.classId == _selectedClassId).toList();
+    }
+
+    return tests;
+  }
+
+  List<ResultModel> get _filteredResults {
+    var results = _resultController.results.toList();
+
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      results = results.where((r) {
+        final student = _studentController.students
+            .where((s) => s.id == r.studentId)
+            .firstOrNull;
+        if (student == null) return false;
+        return student.name.toLowerCase().contains(query) ||
+               (student.studentId?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    return results;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Test Results')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
+        title: const Text('Test Results'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
       drawer: _buildNavigationDrawer(context),
       bottomNavigationBar: ResponsiveUtils.isMobile(context)
           ? _buildBottomNavigationBar()
           : null,
       body: Obx(
-        () => _testController.isLoading.value
+        () => _testController.isLoading.value ||
+                _courseController.isLoading.value ||
+                _shiftController.isLoading.value ||
+                _classController.isLoading.value
             ? const Center(child: CircularProgressIndicator())
-            : _testController.tests.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.assessment_outlined,
-                      size: 80,
-                      color: AppTheme.textSecondary,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'No tests available',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _testController.tests.length,
-                itemBuilder: (context, index) {
-                  final test = _testController.tests[index];
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: ListTile(
-                      title: Text(test.title),
-                      subtitle: Text(
-                        '${test.questionCount} Questions • ${test.totalMarks} Marks',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (test.resultsReleased)
-                            Chip(
-                              label: const Text('Released'),
-                              backgroundColor: AppTheme.successColor,
-                              labelStyle: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
+            : Column(
+                children: [
+                  // Filters Section
+                  _buildFiltersSection(),
+                  const SizedBox(height: 16),
+                  // Tests List
+                  Expanded(
+                    child: _filteredTests.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.assessment_outlined,
+                                  size: 80,
+                                  color: AppTheme.textSecondary,
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'No tests available',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                              ],
                             ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward_ios, size: 16),
-                        ],
-                      ),
-                      onTap: () async {
-                        await _resultController.fetchTestResults(
-                          testId: test.id!,
-                        );
-                        _showResultsDialog(test);
-                      },
-                    ),
-                  );
-                },
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _filteredTests.length,
+                            itemBuilder: (context, index) {
+                              final test = _filteredTests[index];
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 16),
+                                child: ListTile(
+                                  title: Text(test.title),
+                                  subtitle: Text(
+                                    '${test.questionCount} Questions • ${test.totalMarks} Marks',
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (test.resultsReleased)
+                                        Chip(
+                                          label: const Text('Released'),
+                                          backgroundColor: AppTheme.successColor,
+                                          labelStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      const SizedBox(width: 8),
+                                      const Icon(Icons.arrow_forward_ios, size: 16),
+                                    ],
+                                  ),
+                                  onTap: () async {
+                                    await _resultController.fetchTestResults(
+                                      testId: test.id!,
+                                    );
+                                    _showResultsDialog(test);
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
               ),
       ),
+    );
+  }
+
+  Widget _buildFiltersSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.grey[100],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Filter Results',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDropdown(
+                  label: 'Course',
+                  value: _selectedCourseId,
+                  items: _courseController.courses,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCourseId = value;
+                      _selectedShiftId = null;
+                      _selectedClassId = null;
+                      _selectedTestId = null;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDropdown(
+                  label: 'Shift',
+                  value: _selectedShiftId,
+                  items: _shiftController.shifts,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedShiftId = value;
+                      _selectedClassId = null;
+                      _selectedTestId = null;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildDropdown(
+                  label: 'Class (9th-12th)',
+                  value: _selectedClassId,
+                  items: _classController.classes,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedClassId = value;
+                      _selectedTestId = null;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildDropdown(
+                  label: 'Test',
+                  value: _selectedTestId,
+                  items: _filteredTests,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedTestId = value;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String? value,
+    required dynamic items,
+    required Function(String?) onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 4),
+        DropdownButtonFormField<String>(
+          value: value,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+          ),
+          hint: const Text('All'),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('All'),
+            ),
+            ...items.map((item) {
+              String itemId;
+              String itemName;
+              if (item is CourseModel) {
+                itemId = item.id ?? '';
+                itemName = item.name;
+              } else if (item is ShiftModel) {
+                itemId = item.id ?? '';
+                itemName = item.name;
+              } else if (item is ClassModel) {
+                itemId = item.id ?? '';
+                itemName = item.name;
+              } else if (item is TestModel) {
+                itemId = item.id ?? '';
+                itemName = item.title;
+              } else {
+                itemId = '';
+                itemName = 'Unknown';
+              }
+              return DropdownMenuItem<String>(
+                value: itemId.isEmpty ? null : itemId,
+                child: Text(itemName),
+              );
+            }),
+          ],
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 
@@ -120,48 +358,94 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
         title: Text('${test.title} - Results'),
         content: SizedBox(
           width: double.maxFinite,
-          height: 400,
-          child: Obx(
-            () => _resultController.isLoading.value
-                ? const Center(child: CircularProgressIndicator())
-                : _resultController.results.isEmpty
-                ? const Center(child: Text('No results yet'))
-                : ListView.builder(
-                    itemCount: _resultController.results.length,
-                    itemBuilder: (context, index) {
-                      final result = _resultController.results[index];
-                      return ListTile(
-                        title: Text('Student ${index + 1}'),
-                        subtitle: Text(
-                          '${result.obtainedMarks}/${result.totalMarks} (${result.percentage.toStringAsFixed(1)}%)',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (test.resultsReleased && result.position != null)
-                              Text(
-                                '${result.position}${_getOrdinalSuffix(result.position!)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              ),
-                            const SizedBox(width: 8),
-                            Chip(
-                              label: Text(result.status),
-                              backgroundColor: result.status == 'PASS'
-                                  ? AppTheme.successColor
-                                  : AppTheme.errorColor,
-                              labelStyle: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+          height: 500,
+          child: Column(
+            children: [
+              // Search bar
+              TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search by name or roll number',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _searchController.clear();
+                            });
+                          },
+                        )
+                      : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                ),
+                onChanged: (value) {
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: 16),
+              // Results list
+              Expanded(
+                child: Obx(
+                  () => _resultController.isLoading.value
+                      ? const Center(child: CircularProgressIndicator())
+                      : _filteredResults.isEmpty
+                      ? const Center(child: Text('No results found'))
+                      : ListView.builder(
+                          itemCount: _filteredResults.length,
+                          itemBuilder: (context, index) {
+                            final result = _filteredResults[index];
+                            final student = _studentController.students
+                                .where((s) => s.id == result.studentId)
+                                .firstOrNull;
+
+                            return ListTile(
+                              title: Text(
+                                student?.name ?? 'Student ${index + 1}',
+                                style: const TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                              subtitle: Text(
+                                '${result.obtainedMarks}/${result.totalMarks} (${result.percentage.toStringAsFixed(1)}%)',
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (test.resultsReleased && result.position != null)
+                                    Text(
+                                      '${result.position}${_getOrdinalSuffix(result.position!)}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    ),
+                                  const SizedBox(width: 8),
+                                  Chip(
+                                    label: Text(result.status),
+                                    backgroundColor: result.status == 'PASS'
+                                        ? AppTheme.successColor
+                                        : AppTheme.errorColor,
+                                    labelStyle: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  IconButton(
+                                    icon: const Icon(Icons.download),
+                                    onPressed: () => _downloadStudentMarksheet(result, student, test),
+                                    tooltip: 'Download Marksheet',
+                                    iconSize: 20,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
         actions: [
@@ -169,8 +453,8 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
           if (test.resultsReleased) ...[
             IconButton(
               icon: const Icon(Icons.picture_as_pdf),
-              onPressed: () => _exportToPdf(test),
-              tooltip: 'Export to PDF',
+              onPressed: () => _exportClassResultSheet(test),
+              tooltip: 'Export Class Result Sheet',
             ),
             IconButton(
               icon: const Icon(Icons.table_chart),
@@ -235,17 +519,61 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
     }
   }
 
-  Future<void> _exportToPdf(dynamic test) async {
+  Future<void> _exportClassResultSheet(dynamic test) async {
     try {
-      await _pdfService.generateAllMarksheets(
+      // Show loading indicator
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      // Fetch all related data
+      await Future.wait([
+        _courseController.fetchCourses(),
+        _shiftController.fetchShifts(),
+        _classController.fetchClasses(),
+      ]);
+
+      final course = _courseController.courses.firstWhereOrNull(
+        (c) => c.id == test.courseId,
+      );
+      final shift = _shiftController.shifts.firstWhereOrNull(
+        (s) => s.id == test.shiftId,
+      );
+      final schoolClass = _classController.classes.firstWhereOrNull(
+        (c) => c.id == test.classId,
+      );
+
+      // Close loading dialog
+      Get.back();
+
+      // Generate professional class result sheet
+      await _pdfService.generateClassResultSheet(
         results: _resultController.results,
         students: _studentController.students,
         test: test,
+        course: course,
+        shift: shift,
+        schoolClass: schoolClass,
+      );
+
+      // Show success message
+      Get.snackbar(
+        'Success',
+        'Class result sheet generated successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.successColor,
+        colorText: Colors.white,
       );
     } catch (e) {
+      // Close loading dialog if open
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
       Get.snackbar(
         'Error',
-        'Failed to export PDF: ${e.toString()}',
+        'Failed to export class result sheet: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorColor,
         colorText: Colors.white,
@@ -288,6 +616,60 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
       Get.snackbar(
         'Error',
         'Failed to export CSV: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorColor,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  Future<void> _downloadStudentMarksheet(
+    dynamic result,
+    dynamic student,
+    dynamic test,
+  ) async {
+    try {
+      // Show loading indicator
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      // Fetch course data
+      await _courseController.fetchCourses();
+      final course = _courseController.courses.firstWhereOrNull(
+        (c) => c.id == test.courseId,
+      );
+
+      // Close loading dialog
+      Get.back();
+
+      // Generate PDF
+      await _pdfService.generateMarksheet(
+        result: result,
+        student: student,
+        test: test,
+        course: course,
+      );
+
+      // Show success message
+      Get.snackbar(
+        'Success',
+        'Marksheet PDF downloaded successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.successColor,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      // Close loading dialog if open
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
+      // Show error message
+      Get.snackbar(
+        'Error',
+        'Failed to download marksheet: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: AppTheme.errorColor,
         colorText: Colors.white,
@@ -354,6 +736,20 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
             _buildDrawerItem(Icons.people, 'Students', 3),
             _buildDrawerItem(Icons.assessment, 'Results', 4),
             _buildDrawerItem(Icons.person, 'Profile', 5),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.white),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                _showLogoutConfirmation(context);
+                if (ResponsiveUtils.isMobile(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -446,5 +842,36 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
         Get.toNamed(Routes.TEACHER_PROFILE);
         break;
     }
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _authController.signOut();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.errorColor,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

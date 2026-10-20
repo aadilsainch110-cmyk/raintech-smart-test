@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:get/get.dart';
+import '../controllers/network_controller.dart';
 
 // ignore_for_file: avoid_print
 
@@ -27,6 +29,7 @@ class FirestoreService {
     try {
       return await _firestore.collection(collectionPath).doc(documentId).get();
     } catch (e) {
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -35,6 +38,7 @@ class FirestoreService {
     try {
       return await _firestore.collection(collectionPath).get();
     } catch (e) {
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -52,6 +56,7 @@ class FirestoreService {
       return result;
     } catch (e) {
       print('DEBUG: Error in addDocument: $e');
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -64,6 +69,7 @@ class FirestoreService {
     try {
       await _firestore.collection(collectionPath).doc(documentId).set(data);
     } catch (e) {
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -76,6 +82,7 @@ class FirestoreService {
     try {
       await _firestore.collection(collectionPath).doc(documentId).update(data);
     } catch (e) {
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -87,6 +94,7 @@ class FirestoreService {
     try {
       await _firestore.collection(collectionPath).doc(documentId).delete();
     } catch (e) {
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -115,6 +123,7 @@ class FirestoreService {
       print('DEBUG: Batch delete completed');
     } catch (e) {
       print('DEBUG: Error in deleteDocumentsByQuery: $e');
+      _handleNetworkError(e);
       rethrow;
     }
   }
@@ -154,10 +163,50 @@ class FirestoreService {
         .where(field, arrayContains: value);
   }
 
+  void _handleNetworkError(dynamic error) {
+    // Check if error is network-related
+    final errorString = error.toString().toLowerCase();
+    final isNetworkError = errorString.contains('network') ||
+        errorString.contains('connection') ||
+        errorString.contains('internet') ||
+        errorString.contains('timeout') ||
+        errorString.contains('unavailable');
+
+    if (isNetworkError) {
+      final networkController = Get.find<NetworkController>();
+      networkController.showNetworkError();
+    }
+  }
+
   Future<void> runTransaction(TransactionHandler transactionHandler) async {
     try {
       await _firestore.runTransaction(transactionHandler);
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> batchAddDocuments({
+    required String collectionPath,
+    required List<Map<String, dynamic>> dataList,
+  }) async {
+    print('DEBUG: FirestoreService.batchAddDocuments called');
+    print('DEBUG: Collection: $collectionPath');
+    print('DEBUG: Number of documents: ${dataList.length}');
+    try {
+      final batch = _firestore.batch();
+      final collection = _firestore.collection(collectionPath);
+
+      for (final data in dataList) {
+        final docRef = collection.doc();
+        batch.set(docRef, data);
+      }
+
+      await batch.commit();
+      print('DEBUG: Batch add completed successfully');
+    } catch (e) {
+      print('DEBUG: Error in batchAddDocuments: $e');
+      _handleNetworkError(e);
       rethrow;
     }
   }

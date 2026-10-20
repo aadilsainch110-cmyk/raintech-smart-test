@@ -28,6 +28,10 @@ class _ShiftsManagementScreenState extends State<ShiftsManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
         title: const Text('Shifts Management'),
         actions: [
           IconButton(

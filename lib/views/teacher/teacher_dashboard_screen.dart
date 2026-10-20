@@ -47,6 +47,38 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         title: const Text('Teacher Dashboard'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.sync),
+            onPressed: () async {
+              final confirmed = await Get.dialog<bool>(
+                AlertDialog(
+                  title: const Text('Sync Question Counts'),
+                  content: const Text('This will update the question count for all tests based on the actual questions in the database. Continue?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Get.back(result: false),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Get.back(result: true),
+                      child: const Text('Sync'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true) {
+                await _testController.syncAllTestQuestionCounts();
+                Get.snackbar(
+                  'Success',
+                  'Question counts synced successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: AppTheme.successColor,
+                  colorText: Colors.white,
+                );
+              }
+            },
+            tooltip: 'Sync Question Counts',
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               _showLogoutConfirmation(context);
@@ -126,7 +158,22 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
             _buildDrawerItem(Icons.menu_book, 'Courses', 2),
             _buildDrawerItem(Icons.people, 'Students', 3),
             _buildDrawerItem(Icons.assessment, 'Results', 4),
-            _buildDrawerItem(Icons.person, 'Profile', 5),
+            _buildDrawerItem(Icons.people_alt, 'All Results', 5),
+            _buildDrawerItem(Icons.person, 'Profile', 6),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.white),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                _showLogoutConfirmation(context);
+                if (ResponsiveUtils.isMobile(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -190,6 +237,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           label: 'Results',
         ),
         NavigationDestination(
+          icon: Icon(Icons.people_alt_outlined),
+          selectedIcon: Icon(Icons.people_alt),
+          label: 'All Results',
+        ),
+        NavigationDestination(
           icon: Icon(Icons.person_outlined),
           selectedIcon: Icon(Icons.person),
           label: 'Profile',
@@ -215,6 +267,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         Get.toNamed(Routes.TEACHER_RESULTS);
         break;
       case 5:
+        Get.toNamed(Routes.ALL_STUDENTS_RESULTS);
+        break;
+      case 6:
         Get.toNamed(Routes.TEACHER_PROFILE);
         break;
     }
@@ -313,6 +368,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     _testController.tests.length.toString(),
                     Icons.quiz,
                     AppTheme.primaryColor,
+                    onTap: () => Get.toNamed(Routes.TEACHER_TESTS),
                   ),
                   SizedBox(
                     width: ResponsiveUtils.responsiveSpacing(context, 12),
@@ -322,6 +378,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                     _studentController.students.length.toString(),
                     Icons.people,
                     AppTheme.successColor,
+                    onTap: () => Get.toNamed(Routes.TEACHER_STUDENTS),
                   ),
                 ],
               ),
@@ -361,6 +418,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
               Get.toNamed(Routes.TEACHER_RESULTS);
             }),
             SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+            _buildQuickAction('All Students Results', Icons.people_alt_outlined, () {
+              Get.toNamed(Routes.ALL_STUDENTS_RESULTS);
+            }),
+            SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
             _buildQuickAction('Manage Courses', Icons.menu_book, () {
               Get.toNamed('/teacher-courses');
             }),
@@ -388,39 +449,46 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
     String title,
     String value,
     IconData icon,
-    Color color,
-  ) {
+    Color color, {
+    VoidCallback? onTap,
+  }) {
     return Builder(
       builder: (context) => Expanded(
         child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(
-              ResponsiveUtils.responsiveSpacing(context, 12),
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  icon,
-                  size: ResponsiveUtils.responsiveIconSize(context, 28),
-                  color: color,
-                ),
-                SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 6)),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.responsiveFontSize(context, 20),
-                    fontWeight: FontWeight.bold,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            splashColor: color.withValues(alpha: 0.1),
+            highlightColor: color.withValues(alpha: 0.05),
+            child: Padding(
+              padding: EdgeInsets.all(
+                ResponsiveUtils.responsiveSpacing(context, 12),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    icon,
+                    size: ResponsiveUtils.responsiveIconSize(context, 28),
+                    color: color,
                   ),
-                ),
-                SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 3)),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: ResponsiveUtils.responsiveFontSize(context, 11),
-                    color: AppTheme.textSecondary,
+                  SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 6)),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 20),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-              ],
+                  SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 3)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: ResponsiveUtils.responsiveFontSize(context, 11),
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -465,27 +533,35 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
           final test = _testController.tests[index];
           return Card(
             margin: EdgeInsets.only(
-              bottom: ResponsiveUtils.responsiveSpacing(context, 8),
+              bottom: ResponsiveUtils.responsiveSpacing(context, 6),
             ),
             child: ListTile(
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: ResponsiveUtils.responsiveSpacing(context, 12),
+                vertical: ResponsiveUtils.responsiveSpacing(context, 8),
+              ),
               title: Text(
                 test.title,
                 style: TextStyle(
-                  fontSize: ResponsiveUtils.responsiveFontSize(context, 16),
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
                 ),
               ),
               subtitle: Text(
                 '${test.questionCount} Questions • ${test.status.toUpperCase()}',
                 style: TextStyle(
-                  fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
                 ),
               ),
               trailing: Chip(
                 label: Text(
                   test.status.toUpperCase(),
-                  style: const TextStyle(color: Colors.white, fontSize: 10),
+                  style: const TextStyle(color: Colors.white, fontSize: 9),
                 ),
                 backgroundColor: _getStatusColor(test.status),
+                padding: EdgeInsets.symmetric(
+                  horizontal: ResponsiveUtils.responsiveSpacing(context, 8),
+                  vertical: 0,
+                ),
               ),
             ),
           );

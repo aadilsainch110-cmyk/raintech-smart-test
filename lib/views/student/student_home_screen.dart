@@ -4,10 +4,12 @@ import '../../controllers/auth_controller.dart';
 import '../../controllers/enrollment_controller.dart';
 import '../../controllers/test_controller.dart';
 import '../../controllers/course_controller.dart';
+import '../../controllers/notification_controller.dart';
 import '../../app/routes/app_routes.dart';
 import '../../app/theme/app_theme.dart' as theme;
 import '../../app/responsive/responsive_utils.dart';
 import '../../app/responsive/adaptive_navigation.dart';
+import 'notifications_screen.dart';
 
 // ignore_for_file: deprecated_member_use
 
@@ -25,6 +27,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   );
   final TestController _testController = Get.put(TestController());
   final CourseController _courseController = Get.put(CourseController());
+  final NotificationController _notificationController = Get.put(NotificationController());
 
   int _selectedIndex = 0;
 
@@ -40,7 +43,26 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         studentId: _authController.currentUser!.id!,
       );
       await _courseController.fetchCourses();
-      await _testController.fetchPublishedTests();
+
+      // Extract enrolled course IDs (only active enrollments)
+      final enrolledCourseIds = _enrollmentController.enrollments
+          .where((e) => e.status == 'active')
+          .map((e) => e.courseId)
+          .toSet()
+          .toList();
+
+      // Fetch published tests only for enrolled courses
+      if (enrolledCourseIds.isNotEmpty) {
+        await _testController.fetchPublishedTestsByCourseIds(
+          courseIds: enrolledCourseIds,
+        );
+      } else {
+        // No enrolled courses - clear tests
+        _testController.tests.clear();
+      }
+
+      // Refresh notifications after enrollments are loaded
+      await _notificationController.refreshNotifications();
     }
   }
 
@@ -51,15 +73,47 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         title: const Text('RAINTECH'),
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              Get.snackbar(
-                'Notifications',
-                'Notifications feature coming soon',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
+          Obx(
+            () => Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications),
+                  onPressed: () {
+                    Get.to(() => const NotificationsScreen());
+                  },
+                  tooltip: 'Notifications',
+                ),
+                if (_notificationController.studentUnreadCount > 0)
+                  Positioned(
+                    right: 8,
+                    top: 6,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Center(
+                        child: Text(
+                          _notificationController.studentUnreadCount > 99
+                              ? '99+'
+                              : _notificationController.studentUnreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -111,7 +165,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   const Icon(Icons.school, color: Colors.white, size: 48),
                   const SizedBox(height: 16),
                   Text(
-                    'RainTech',
+                    'RAINTECH',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: ResponsiveUtils.responsiveFontSize(context, 24),
@@ -122,7 +176,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   Obx(
                     () => Text(
                       _authController.currentUser?.name ?? 'Student',
-                      style: TextStyle(
+                      style: TextStyle(fontWeight: FontWeight.bold,
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
                       ),
@@ -131,12 +185,26 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 ],
               ),
             ),
-            _buildDrawerItem(Icons.home, 'Home', 0),
+            _buildDrawerItem(Icons.home, 'Dashboard', 0),
             _buildDrawerItem(Icons.menu_book, 'Courses', 1),
             _buildDrawerItem(Icons.quiz, 'Tests', 2),
             _buildDrawerItem(Icons.assessment, 'Results', 3),
             _buildDrawerItem(Icons.emoji_events, 'Leaderboard', 4),
             _buildDrawerItem(Icons.person, 'Profile', 5),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.white),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                _showLogoutConfirmation(context);
+                if (ResponsiveUtils.isMobile(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -177,7 +245,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         NavigationDestination(
           icon: Icon(Icons.home_outlined),
           selectedIcon: Icon(Icons.home),
-          label: 'Home',
+          label: 'Dashboard',
         ),
         NavigationDestination(
           icon: Icon(Icons.menu_book_outlined),
@@ -211,6 +279,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   void _handleNavigation(int index) {
     switch (index) {
       case 0:
+        // Already on Home, do nothing
         break;
       case 1:
         Get.toNamed('/student-courses');
@@ -487,106 +556,184 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   Widget _buildCoursesList() {
+    // Filter out rejected enrollments
+    final validEnrollments = _enrollmentController.enrollments
+        .where((e) => e.status != 'rejected')
+        .toList();
+
+    if (validEnrollments.isEmpty) {
+      return _buildEmptyCard('No courses enrolled yet');
+    }
+
     return Builder(
       builder: (context) => SizedBox(
         height: ResponsiveUtils.responsiveSpacing(context, 180),
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          itemCount: _enrollmentController.enrollments.length,
+          itemCount: validEnrollments.length,
           itemBuilder: (context, index) {
-            final enrollment = _enrollmentController.enrollments[index];
+            final enrollment = validEnrollments[index];
             final course = _courseController.getCourseById(enrollment.courseId);
-            return Container(
-              width: ResponsiveUtils.responsiveSpacing(context, 200),
-              margin: EdgeInsets.only(
-                right: ResponsiveUtils.responsiveSpacing(context, 16),
+            final isPending = enrollment.status == 'pending';
+
+            return InkWell(
+              onTap: () => Get.toNamed('/student-courses'),
+              borderRadius: BorderRadius.circular(
+                ResponsiveUtils.responsiveBorderRadius(context, 16),
               ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    theme.AppTheme.primaryColor.withValues(alpha: 0.1),
-                    theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
-                  ],
+              splashColor: theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+              child: Container(
+                width: ResponsiveUtils.responsiveSpacing(context, 200),
+                margin: EdgeInsets.only(
+                  right: ResponsiveUtils.responsiveSpacing(context, 16),
                 ),
-                borderRadius: BorderRadius.circular(
-                  ResponsiveUtils.responsiveBorderRadius(context, 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isPending
+                        ? [
+                            Colors.orange.withValues(alpha: 0.1),
+                            Colors.amber.withValues(alpha: 0.1),
+                          ]
+                        : [
+                            theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+                            theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
+                          ],
+                  ),
+                  borderRadius: BorderRadius.circular(
+                    ResponsiveUtils.responsiveBorderRadius(context, 16),
+                  ),
+                  border: Border.all(
+                    color: isPending
+                        ? Colors.orange.withValues(alpha: 0.3)
+                        : theme.AppTheme.primaryColor.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
                 ),
-                border: Border.all(
-                  color: theme.AppTheme.primaryColor.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-              child: Padding(
-                padding: EdgeInsets.all(
-                  ResponsiveUtils.responsiveSpacing(context, 20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Stack(
                   children: [
-                    Container(
+                    Padding(
                       padding: EdgeInsets.all(
-                        ResponsiveUtils.responsiveSpacing(context, 12),
+                        ResponsiveUtils.responsiveSpacing(context, 20),
                       ),
-                      decoration: BoxDecoration(
-                        color: theme.AppTheme.primaryColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveUtils.responsiveBorderRadius(context, 12),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.menu_book,
-                        color: theme.AppTheme.primaryColor,
-                        size: ResponsiveUtils.responsiveIconSize(context, 24),
-                      ),
-                    ),
-                    SizedBox(
-                      height: ResponsiveUtils.responsiveSpacing(context, 16),
-                    ),
-                    Text(
-                      course?.name ?? 'Unknown Course',
-                      style: TextStyle(
-                        fontSize: ResponsiveUtils.responsiveFontSize(
-                          context,
-                          16,
-                        ),
-                        fontWeight: FontWeight.bold,
-                        color: theme.AppTheme.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    SizedBox(
-                      height: ResponsiveUtils.responsiveSpacing(context, 8),
-                    ),
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.responsiveSpacing(
-                          context,
-                          12,
-                        ),
-                        vertical: ResponsiveUtils.responsiveSpacing(context, 6),
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.AppTheme.successColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveUtils.responsiveBorderRadius(context, 8),
-                        ),
-                      ),
-                      child: Text(
-                        'Enrolled',
-                        style: TextStyle(
-                          fontSize: ResponsiveUtils.responsiveFontSize(
-                            context,
-                            12,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(
+                              ResponsiveUtils.responsiveSpacing(context, 12),
+                            ),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? Colors.orange.withValues(alpha: 0.2)
+                                  : theme.AppTheme.primaryColor.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(
+                                ResponsiveUtils.responsiveBorderRadius(context, 12),
+                              ),
+                            ),
+                            child: Icon(
+                              isPending ? Icons.pending : Icons.menu_book,
+                              color: isPending ? Colors.orange : theme.AppTheme.primaryColor,
+                              size: ResponsiveUtils.responsiveIconSize(context, 24),
+                            ),
                           ),
-                          fontWeight: FontWeight.w600,
-                          color: theme.AppTheme.successColor,
-                        ),
+                          SizedBox(
+                            height: ResponsiveUtils.responsiveSpacing(context, 16),
+                          ),
+                          Text(
+                            course?.name ?? 'Unknown Course',
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(
+                                context,
+                                16,
+                              ),
+                              fontWeight: FontWeight.bold,
+                              color: theme.AppTheme.textPrimary,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(
+                            height: ResponsiveUtils.responsiveSpacing(context, 8),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: ResponsiveUtils.responsiveSpacing(
+                                context,
+                                12,
+                              ),
+                              vertical: ResponsiveUtils.responsiveSpacing(context, 6),
+                            ),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? Colors.orange.withValues(alpha: 0.1)
+                                  : theme.AppTheme.successColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(
+                                ResponsiveUtils.responsiveBorderRadius(context, 8),
+                              ),
+                            ),
+                            child: Text(
+                              isPending ? 'Pending' : 'Enrolled',
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.responsiveFontSize(
+                                  context,
+                                  12,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                color: isPending ? Colors.orange : theme.AppTheme.successColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+                    if (course == null)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                          onPressed: () async {
+                            final confirmed = await Get.dialog<bool>(
+                              AlertDialog(
+                                title: const Text('Delete Enrollment'),
+                                content: const Text('Are you sure you want to delete this enrollment?'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Get.back(result: false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Get.back(result: true),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: theme.AppTheme.errorColor,
+                                    ),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true) {
+                              final success = await _enrollmentController.deleteEnrollment(
+                                enrollmentId: enrollment.id!,
+                              );
+                              if (success) {
+                                Get.snackbar(
+                                  'Success',
+                                  'Enrollment deleted successfully',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: theme.AppTheme.successColor,
+                                  colorText: Colors.white,
+                                );
+                                _loadData();
+                              }
+                            }
+                          },
+                          tooltip: 'Delete',
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -616,137 +763,144 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         itemCount: availableCourses.length,
         itemBuilder: (context, index) {
           final course = availableCourses[index];
-          return Container(
-            margin: EdgeInsets.only(
-              bottom: ResponsiveUtils.responsiveSpacing(context, 16),
+          return InkWell(
+            onTap: () => Get.toNamed('/student-courses'),
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.responsiveBorderRadius(context, 16),
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(
-                ResponsiveUtils.responsiveBorderRadius(context, 16),
+            splashColor: theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+            child: Container(
+              margin: EdgeInsets.only(
+                bottom: ResponsiveUtils.responsiveSpacing(context, 16),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.responsiveBorderRadius(context, 16),
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(
-                ResponsiveUtils.responsiveSpacing(context, 20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(
-                      ResponsiveUtils.responsiveSpacing(context, 16),
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.AppTheme.primaryColor.withValues(alpha: 0.1),
-                          theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
-                        ],
+              child: Padding(
+                padding: EdgeInsets.all(
+                  ResponsiveUtils.responsiveSpacing(context, 20),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(
+                        ResponsiveUtils.responsiveSpacing(context, 16),
                       ),
-                      borderRadius: BorderRadius.circular(
-                        ResponsiveUtils.responsiveBorderRadius(context, 12),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.menu_book,
-                      color: theme.AppTheme.primaryColor,
-                      size: ResponsiveUtils.responsiveIconSize(context, 28),
-                    ),
-                  ),
-                  SizedBox(
-                    width: ResponsiveUtils.responsiveSpacing(context, 16),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          course.name,
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.responsiveFontSize(
-                              context,
-                              16,
-                            ),
-                            fontWeight: FontWeight.bold,
-                            color: theme.AppTheme.textPrimary,
-                          ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+                            theme.AppTheme.secondaryColor.withValues(alpha: 0.1),
+                          ],
                         ),
-                        if (course.description != null) ...[
-                          SizedBox(
-                            height: ResponsiveUtils.responsiveSpacing(
-                              context,
-                              4,
-                            ),
-                          ),
-                          Text(
-                            course.description!,
-                            style: TextStyle(
-                              fontSize: ResponsiveUtils.responsiveFontSize(
-                                context,
-                                14,
-                              ),
-                              color: theme.AppTheme.textSecondary,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: ResponsiveUtils.responsiveSpacing(context, 16),
-                  ),
-                  ElevatedButton(
-                    onPressed: () async {
-                      final success = await _enrollmentController
-                          .createEnrollment(
-                            studentId: _authController.currentUser!.id!,
-                            courseId: course.id!,
-                            shiftId: 'default',
-                          );
-                      if (success) {
-                        Get.snackbar(
-                          'Success',
-                          'Enrolled in ${course.name}',
-                          snackPosition: SnackPosition.BOTTOM,
-                          backgroundColor: theme.AppTheme.successColor,
-                          colorText: Colors.white,
-                        );
-                        _loadData();
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.responsiveSpacing(
-                          context,
-                          24,
-                        ),
-                        vertical: ResponsiveUtils.responsiveSpacing(
-                          context,
-                          12,
-                        ),
-                      ),
-                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(
                           ResponsiveUtils.responsiveBorderRadius(context, 12),
                         ),
                       ),
+                      child: Icon(
+                        Icons.menu_book,
+                        color: theme.AppTheme.primaryColor,
+                        size: ResponsiveUtils.responsiveIconSize(context, 28),
+                      ),
                     ),
-                    child: const Text('Enroll'),
-                  ),
-                ],
+                    SizedBox(
+                      width: ResponsiveUtils.responsiveSpacing(context, 16),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            course.name,
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(
+                                context,
+                                16,
+                              ),
+                              fontWeight: FontWeight.bold,
+                              color: theme.AppTheme.textPrimary,
+                            ),
+                          ),
+                          if (course.description != null) ...[
+                            SizedBox(
+                              height: ResponsiveUtils.responsiveSpacing(
+                                context,
+                                4,
+                              ),
+                            ),
+                            Text(
+                              course.description!,
+                              style: TextStyle(
+                                fontSize: ResponsiveUtils.responsiveFontSize(
+                                  context,
+                                  14,
+                                ),
+                                color: theme.AppTheme.textSecondary,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: ResponsiveUtils.responsiveSpacing(context, 16),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final success = await _enrollmentController
+                            .createEnrollment(
+                              studentId: _authController.currentUser!.id!,
+                              courseId: course.id!,
+                              shiftId: 'default',
+                            );
+                        if (success) {
+                          Get.snackbar(
+                            'Success',
+                            'Enrolled in ${course.name}',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: theme.AppTheme.successColor,
+                            colorText: Colors.white,
+                          );
+                          _loadData();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.responsiveSpacing(
+                            context,
+                            24,
+                          ),
+                          vertical: ResponsiveUtils.responsiveSpacing(
+                            context,
+                            12,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ResponsiveUtils.responsiveBorderRadius(context, 12),
+                          ),
+                        ),
+                      ),
+                      child: const Text('Enroll'),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -756,6 +910,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   Widget _buildTestsList() {
+    // Additional safety check: only show tests if student has active enrollments
+    final hasActiveEnrollments = _enrollmentController.enrollments
+        .any((e) => e.status == 'active');
+
+    if (!hasActiveEnrollments) {
+      return _buildEmptyCard('No tests available (enroll in a course first)');
+    }
+
     return Builder(
       builder: (context) => ListView.builder(
         shrinkWrap: true,
@@ -763,123 +925,139 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         itemCount: _testController.tests.length,
         itemBuilder: (context, index) {
           final test = _testController.tests[index];
-          return Container(
-            margin: EdgeInsets.only(
-              bottom: ResponsiveUtils.responsiveSpacing(context, 16),
+          return InkWell(
+            onTap: () => Get.toNamed(Routes.STUDENT_TESTS),
+            borderRadius: BorderRadius.circular(
+              ResponsiveUtils.responsiveBorderRadius(context, 10),
             ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(
-                ResponsiveUtils.responsiveBorderRadius(context, 16),
+            splashColor: theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+            child: Container(
+              margin: EdgeInsets.only(
+                bottom: ResponsiveUtils.responsiveSpacing(context, 8),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.responsiveBorderRadius(context, 10),
                 ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(
-                ResponsiveUtils.responsiveSpacing(context, 20),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.all(
-                      ResponsiveUtils.responsiveSpacing(context, 16),
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          theme.AppTheme.accentColor.withValues(alpha: 0.1),
-                          theme.AppTheme.primaryColor.withValues(alpha: 0.1),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(
-                        ResponsiveUtils.responsiveBorderRadius(context, 12),
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.quiz,
-                      color: theme.AppTheme.accentColor,
-                      size: ResponsiveUtils.responsiveIconSize(context, 28),
-                    ),
-                  ),
-                  SizedBox(
-                    width: ResponsiveUtils.responsiveSpacing(context, 16),
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          test.title,
-                          style: TextStyle(
-                            fontSize: ResponsiveUtils.responsiveFontSize(
-                              context,
-                              16,
-                            ),
-                            fontWeight: FontWeight.bold,
-                            color: theme.AppTheme.textPrimary,
-                          ),
-                        ),
-                        SizedBox(
-                          height: ResponsiveUtils.responsiveSpacing(context, 8),
-                        ),
-                        Row(
-                          children: [
-                            _buildTestInfoChip(
-                              Icons.help_outline,
-                              '${test.questionCount} Questions',
-                            ),
-                            SizedBox(
-                              width: ResponsiveUtils.responsiveSpacing(
-                                context,
-                                8,
-                              ),
-                            ),
-                            _buildTestInfoChip(
-                              Icons.access_time,
-                              '${test.durationMinutes} min',
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    width: ResponsiveUtils.responsiveSpacing(context, 16),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      Get.toNamed(Routes.TEST_SCREEN, arguments: test);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.AppTheme.accentColor,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: ResponsiveUtils.responsiveSpacing(
-                          context,
-                          24,
-                        ),
-                        vertical: ResponsiveUtils.responsiveSpacing(
-                          context,
-                          12,
-                        ),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          ResponsiveUtils.responsiveBorderRadius(context, 12),
-                        ),
-                      ),
-                    ),
-                    child: const Text('Start'),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
                 ],
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(
+                  ResponsiveUtils.responsiveSpacing(context, 10),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(
+                        ResponsiveUtils.responsiveSpacing(context, 10),
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            theme.AppTheme.accentColor.withValues(alpha: 0.1),
+                            theme.AppTheme.primaryColor.withValues(alpha: 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 8),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.quiz,
+                        color: theme.AppTheme.accentColor,
+                        size: ResponsiveUtils.responsiveIconSize(context, 20),
+                      ),
+                    ),
+                    SizedBox(
+                      width: ResponsiveUtils.responsiveSpacing(context, 10),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            test.title,
+                            style: TextStyle(
+                              fontSize: ResponsiveUtils.responsiveFontSize(
+                                context,
+                                13,
+                              ),
+                              fontWeight: FontWeight.bold,
+                              color: theme.AppTheme.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(
+                            height: ResponsiveUtils.responsiveSpacing(context, 4),
+                          ),
+                          Row(
+                            children: [
+                              _buildTestInfoChip(
+                                Icons.help_outline,
+                                '${test.questionCount} Q',
+                              ),
+                              SizedBox(
+                                width: ResponsiveUtils.responsiveSpacing(
+                                  context,
+                                  4,
+                                ),
+                              ),
+                              _buildTestInfoChip(
+                                Icons.access_time,
+                                '${test.durationMinutes}m',
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(
+                      width: ResponsiveUtils.responsiveSpacing(context, 10),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Get.toNamed(Routes.TEST_SCREEN, arguments: test);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: theme.AppTheme.accentColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveUtils.responsiveSpacing(
+                            context,
+                            12,
+                          ),
+                          vertical: ResponsiveUtils.responsiveSpacing(
+                            context,
+                            6,
+                          ),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            ResponsiveUtils.responsiveBorderRadius(context, 6),
+                          ),
+                        ),
+                        minimumSize: Size(0, ResponsiveUtils.responsiveSpacing(context, 30)),
+                      ),
+                      child: Text(
+                        'Start',
+                        style: TextStyle(
+                          fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
@@ -892,13 +1070,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     return Builder(
       builder: (context) => Container(
         padding: EdgeInsets.symmetric(
-          horizontal: ResponsiveUtils.responsiveSpacing(context, 12),
-          vertical: ResponsiveUtils.responsiveSpacing(context, 6),
+          horizontal: ResponsiveUtils.responsiveSpacing(context, 6),
+          vertical: ResponsiveUtils.responsiveSpacing(context, 3),
         ),
         decoration: BoxDecoration(
           color: theme.AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(
-            ResponsiveUtils.responsiveBorderRadius(context, 8),
+            ResponsiveUtils.responsiveBorderRadius(context, 4),
           ),
         ),
         child: Row(
@@ -906,14 +1084,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           children: [
             Icon(
               icon,
-              size: ResponsiveUtils.responsiveIconSize(context, 14),
+              size: ResponsiveUtils.responsiveIconSize(context, 10),
               color: theme.AppTheme.textSecondary,
             ),
-            SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 4)),
+            SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 3)),
             Text(
               label,
               style: TextStyle(
-                fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
+                fontSize: ResponsiveUtils.responsiveFontSize(context, 10),
                 fontWeight: FontWeight.w500,
                 color: theme.AppTheme.textSecondary,
               ),

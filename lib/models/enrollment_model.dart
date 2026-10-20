@@ -13,7 +13,7 @@ class EnrollmentModel {
     required this.courseId,
     this.classId,
     required this.shiftId,
-    this.status = 'active',
+    this.status = 'pending',
     this.createdAt,
   });
 

@@ -44,6 +44,10 @@ class _TestMonitoringScreenState extends State<TestMonitoringScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
         title: Text(_test?.title ?? 'Test Monitoring'),
         actions: [
           if (_test?.status == 'published')

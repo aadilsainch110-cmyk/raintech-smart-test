@@ -36,6 +36,10 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
         title: const Text('Students'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
@@ -229,6 +233,20 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
             _buildDrawerItem(Icons.people, 'Students', 3),
             _buildDrawerItem(Icons.assessment, 'Results', 4),
             _buildDrawerItem(Icons.person, 'Profile', 5),
+            const Divider(color: Colors.white24),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.white),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                _showLogoutConfirmation(context);
+                if (ResponsiveUtils.isMobile(context)) {
+                  Navigator.pop(context);
+                }
+              },
+            ),
           ],
         ),
       ),
@@ -321,5 +339,36 @@ class _TeacherStudentsScreenState extends State<TeacherStudentsScreen> {
         Get.toNamed(Routes.TEACHER_PROFILE);
         break;
     }
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _authController.signOut();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.errorColor,
+              ),
+              child: const Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

@@ -1,5 +1,12 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+
+# Set CMAKE_POLICY_VERSION_MINIMUM to allow Firebase SDK with older CMake requirements
+# Firebase Windows C++ SDK uses cmake_minimum_required(VERSION 3.5) which is
+# incompatible with modern CMake without this policy setting
+# This must be set BEFORE project() call
+set(CMAKE_POLICY_VERSION_MINIMUM "3.5")
+
 project(raintech_smart_test LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

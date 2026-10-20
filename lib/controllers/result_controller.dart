@@ -10,6 +10,57 @@ class ResultController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxString errorMessage = ''.obs;
 
+  /// Normalize answer for comparison - handles both letter (A/B/C/D) and text matching
+  String _normalizeAnswer(String answer) {
+    return answer.trim().toUpperCase();
+  }
+
+  /// Check if student answer matches correct answer
+  /// Handles both letter (A/B/C/D) and text-based comparisons
+  bool _isAnswerCorrect({
+    required String studentAnswer,
+    required String correctAnswer,
+    required QuestionModel question,
+  }) {
+    final normalizedStudent = _normalizeAnswer(studentAnswer);
+    final normalizedCorrect = _normalizeAnswer(correctAnswer);
+
+    // Direct match (both are letters or both are same text)
+    if (normalizedStudent == normalizedCorrect) {
+      return true;
+    }
+
+    // If correct answer is a letter (A/B/C/D), map to option text
+    if (normalizedCorrect == 'A' && normalizedStudent == _normalizeAnswer(question.optionA)) {
+      return true;
+    }
+    if (normalizedCorrect == 'B' && normalizedStudent == _normalizeAnswer(question.optionB)) {
+      return true;
+    }
+    if (normalizedCorrect == 'C' && normalizedStudent == _normalizeAnswer(question.optionC)) {
+      return true;
+    }
+    if (normalizedCorrect == 'D' && normalizedStudent == _normalizeAnswer(question.optionD)) {
+      return true;
+    }
+
+    // If student answer is a letter (A/B/C/D), map to option text
+    if (normalizedStudent == 'A' && normalizedCorrect == _normalizeAnswer(question.optionA)) {
+      return true;
+    }
+    if (normalizedStudent == 'B' && normalizedCorrect == _normalizeAnswer(question.optionB)) {
+      return true;
+    }
+    if (normalizedStudent == 'C' && normalizedCorrect == _normalizeAnswer(question.optionC)) {
+      return true;
+    }
+    if (normalizedStudent == 'D' && normalizedCorrect == _normalizeAnswer(question.optionD)) {
+      return true;
+    }
+
+    return false;
+  }
+
   Future<void> fetchStudentResults({required String studentId}) async {
     try {
       isLoading.value = true;
@@ -102,20 +153,60 @@ class ResultController extends GetxController {
       int correctAnswers = 0;
       int wrongAnswers = 0;
 
+      print('========== DEBUG: RESULT CALCULATION START ==========');
+      print('Test ID: $testId');
+      print('Student ID (Firebase UID): $studentId');
+      print('Total Questions: ${questions.length}');
+      print('Total Answers Provided: ${answers.length}');
+      print('Total Marks: $totalMarks');
+      print('Passing Marks: $passingMarks');
+
       for (final question in questions) {
         final studentAnswer = answers[question.order];
+        final correctAnswer = question.correctAnswer;
+
+        print('\n--- Question ${question.order} ---');
+        print('Question: ${question.question}');
+        print('Option A: ${question.optionA}');
+        print('Option B: ${question.optionB}');
+        print('Option C: ${question.optionC}');
+        print('Option D: ${question.optionD}');
+        print('Correct Answer (from Firestore): "$correctAnswer"');
+        print('Student Answer: "${studentAnswer ?? "NULL"}"');
+
         if (studentAnswer != null) {
-          if (studentAnswer.toUpperCase() ==
-              question.correctAnswer.toUpperCase()) {
+          final isCorrect = _isAnswerCorrect(
+            studentAnswer: studentAnswer,
+            correctAnswer: correctAnswer,
+            question: question,
+          );
+
+          print('Normalized Student Answer: "${_normalizeAnswer(studentAnswer)}"');
+          print('Normalized Correct Answer: "${_normalizeAnswer(correctAnswer)}"');
+          print('Is Correct: $isCorrect');
+
+          if (isCorrect) {
             obtainedMarks += question.marks;
             correctAnswers++;
+            print('Result: CORRECT (+${question.marks} marks)');
           } else {
             wrongAnswers++;
+            print('Result: WRONG');
           }
         } else {
           wrongAnswers++;
+          print('Result: UNANSWERED (counted as wrong)');
         }
       }
+
+      print('\n========== DEBUG: FINAL RESULT ==========');
+      print('Correct Answers: $correctAnswers');
+      print('Wrong Answers: $wrongAnswers');
+      print('Obtained Marks: $obtainedMarks');
+      print('Total Marks: $totalMarks');
+      print('Percentage: ${totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0.0}%');
+      print('Status: ${obtainedMarks >= passingMarks ? "PASS" : "FAIL"}');
+      print('==============================================');
 
       final percentage = totalMarks > 0
           ? (obtainedMarks / totalMarks) * 100
@@ -139,6 +230,9 @@ class ResultController extends GetxController {
         collectionPath: 'results',
         data: result.toJson(),
       );
+
+      // Auto-calculate rankings after saving result
+      await calculateRankings(testId: testId);
 
       return true;
     } catch (e) {
@@ -314,5 +408,69 @@ class ResultController extends GetxController {
     required String courseId,
   }) {
     return results.where((r) => r.studentId == studentId).toList();
+  }
+
+  Future<Map<String, dynamic>> calculateOverallLeaderboard() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      await fetchAllResults();
+
+      // Group results by student
+      final Map<String, List<ResultModel>> studentResults = {};
+      for (final result in results) {
+        if (!studentResults.containsKey(result.studentId)) {
+          studentResults[result.studentId] = [];
+        }
+        studentResults[result.studentId]!.add(result);
+      }
+
+      // Calculate overall performance for each student
+      final List<Map<String, dynamic>> leaderboard = [];
+      studentResults.forEach((studentId, studentResultList) {
+        final totalMarks = studentResultList.fold(0, (sum, r) => sum + r.totalMarks);
+        final obtainedMarks = studentResultList.fold(0, (sum, r) => sum + r.obtainedMarks);
+        final averagePercentage = studentResultList.isNotEmpty
+            ? studentResultList.fold(0.0, (sum, r) => sum + r.percentage) / studentResultList.length
+            : 0.0;
+        final passedTests = studentResultList.where((r) => r.status == 'PASS').length;
+        final totalTests = studentResultList.length;
+
+        leaderboard.add({
+          'studentId': studentId,
+          'totalTests': totalTests,
+          'totalMarks': totalMarks,
+          'obtainedMarks': obtainedMarks,
+          'averagePercentage': averagePercentage,
+          'passedTests': passedTests,
+        });
+      });
+
+      // Sort by average percentage (descending)
+      leaderboard.sort((a, b) => b['averagePercentage'].compareTo(a['averagePercentage']));
+
+      // Assign positions
+      int currentPosition = 1;
+      for (int i = 0; i < leaderboard.length; i++) {
+        if (i > 0 && leaderboard[i]['averagePercentage'] < leaderboard[i - 1]['averagePercentage']) {
+          currentPosition = i + 1;
+        }
+        leaderboard[i]['position'] = currentPosition;
+      }
+
+      return {
+        'leaderboard': leaderboard,
+        'totalStudents': leaderboard.length,
+      };
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return {
+        'leaderboard': <Map<String, dynamic>>[],
+        'totalStudents': 0,
+      };
+    } finally {
+      isLoading.value = false;
+    }
   }
 }

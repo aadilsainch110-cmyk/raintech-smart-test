@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter/services.dart' show ClipboardData, Clipboard;
 import '../../controllers/auth_controller.dart';
 import '../../controllers/admin_controller.dart';
 import '../../app/theme/app_theme.dart' as theme;
@@ -22,6 +23,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _studentIdController = TextEditingController();
+  final _secretCodeController = TextEditingController();
   final _obscurePassword = true.obs;
   final _obscureConfirmPassword = true.obs;
 
@@ -49,11 +51,17 @@ class _SignupScreenState extends State<SignupScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _studentIdController.dispose();
+    _secretCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _handleSignup() async {
     if (_formKey.currentState!.validate()) {
+      // Use manual secret code from input field if provided, otherwise empty (auto-generate)
+      final manualCode = _secretCodeController.text.trim().isEmpty
+          ? null
+          : _secretCodeController.text.trim().toUpperCase();
+
       final success = await _authController.signUp(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
@@ -67,9 +75,13 @@ class _SignupScreenState extends State<SignupScreen> {
         classId: _selectedClassId,
         shiftId: _selectedShiftId,
         role: 'student',
+        manualSecretCode: manualCode,
       );
 
-      if (!success && _authController.errorMessage.value.isNotEmpty) {
+      if (success) {
+        // Show secret code dialog (with auto-generated code if no manual code was used)
+        _showSecretCodeDialog();
+      } else if (_authController.errorMessage.value.isNotEmpty) {
         Get.snackbar(
           'Signup Failed',
           _authController.errorMessage.value,
@@ -79,6 +91,94 @@ class _SignupScreenState extends State<SignupScreen> {
         );
       }
     }
+  }
+
+  void _showSecretCodeDialog() {
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.security, color: theme.AppTheme.primaryColor),
+            SizedBox(width: 12),
+            Text('Your Secret Code'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Save this code securely. You will need it to login.',
+              style: TextStyle(
+                fontSize: 14,
+                color: theme.AppTheme.textSecondary,
+              ),
+            ),
+            SizedBox(height: 20),
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: theme.AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Obx(
+                  () => Text(
+                    _authController.generatedSecretCode.value,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      _copySecretCode();
+                    },
+                    icon: Icon(Icons.copy),
+                    label: Text('Copy Code'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Get.back();
+              Get.back(); // Go back to login screen
+            },
+            child: Text('I Have Saved It'),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  void _copySecretCode() async {
+    await Clipboard.setData(
+      ClipboardData(text: _authController.generatedSecretCode.value),
+    );
+    Get.snackbar(
+      'Code Copied',
+      'Secret code copied to clipboard',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: theme.AppTheme.successColor,
+      colorText: Colors.white,
+    );
   }
 
   @override
@@ -420,6 +520,27 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                       ),
                     ),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+
+                    // Secret Code Field (Optional)
+                    _buildStyledTextField(
+                      controller: _secretCodeController,
+                      label: 'Secret Code (Optional)',
+                      hintText: 'Leave empty to auto-generate or enter 6 digits',
+                      icon: Icons.security,
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          if (value.length != 6) {
+                            return 'Secret code must be exactly 6 digits';
+                          }
+                          if (!RegExp(r'^\d{6}$').hasMatch(value)) {
+                            return 'Secret code must contain only digits';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
                     SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
 
                     // Sign Up Button
@@ -517,6 +638,7 @@ class _SignupScreenState extends State<SignupScreen> {
     required IconData icon,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    TextCapitalization? textCapitalization,
   }) {
     return Builder(
       builder: (context) => Container(
@@ -534,6 +656,7 @@ class _SignupScreenState extends State<SignupScreen> {
         child: TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          textCapitalization: textCapitalization ?? TextCapitalization.none,
           decoration: InputDecoration(
             labelText: label,
             hintText: hintText,

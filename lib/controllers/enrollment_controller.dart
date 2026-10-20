@@ -29,7 +29,6 @@ class EnrollmentController extends GetxController {
               id: doc.id,
             );
           })
-          .where((enrollment) => enrollment.status == 'active')
           .toList();
     } catch (e) {
       errorMessage.value = e.toString();
@@ -75,7 +74,7 @@ class EnrollmentController extends GetxController {
         courseId: courseId,
         classId: classId,
         shiftId: shiftId,
-        status: 'active',
+        status: 'pending',
         createdAt: DateTime.now(),
       );
 
@@ -91,6 +90,20 @@ class EnrollmentController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  Future<bool> approveEnrollment({required String enrollmentId}) async {
+    return await updateEnrollment(
+      enrollmentId: enrollmentId,
+      status: 'active',
+    );
+  }
+
+  Future<bool> rejectEnrollment({required String enrollmentId}) async {
+    return await updateEnrollment(
+      enrollmentId: enrollmentId,
+      status: 'rejected',
+    );
   }
 
   Future<bool> updateEnrollment({

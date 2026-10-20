@@ -19,7 +19,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _secretCodeController = TextEditingController();
   final _obscurePassword = true.obs;
+  final _loginMethod = 'email'.obs; // 'email' or 'secret'
 
   final AuthController _authController = Get.find<AuthController>();
 
@@ -27,15 +29,24 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _secretCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
-      final success = await _authController.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      bool success = false;
+
+      if (_loginMethod.value == 'email') {
+        success = await _authController.signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+      } else {
+        success = await _authController.signInWithSecretCode(
+          secretCode: _secretCodeController.text.trim().toUpperCase(),
+        );
+      }
 
       if (!success && _authController.errorMessage.value.isNotEmpty) {
         Get.snackbar(
@@ -195,122 +206,239 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 32)),
 
-                    // Email Field
+                    // Login Method Selection
                     Container(
+                      padding: EdgeInsets.symmetric(
+                        vertical: ResponsiveUtils.responsiveSpacing(context, 16),
+                        horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha:0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                        color: Colors.white.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveUtils.responsiveBorderRadius(context, 16),
+                        ),
+                        border: Border.all(
+                          color: theme.AppTheme.primaryColor.withValues(alpha: 0.2),
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Obx(
+                              () => _buildLoginMethodButton(
+                                icon: Icons.email,
+                                label: 'Email',
+                                isSelected: _loginMethod.value == 'email',
+                                onTap: () {
+                                  _loginMethod.value = 'email';
+                                },
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 12)),
+                          Expanded(
+                            child: Obx(
+                              () => _buildLoginMethodButton(
+                                icon: Icons.security,
+                                label: 'Secret Code',
+                                isSelected: _loginMethod.value == 'secret',
+                                onTap: () {
+                                  _loginMethod.value = 'secret';
+                                },
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                      child: TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: InputDecoration(
-                          labelText: 'Email Address',
-                          hintText: 'Enter your email',
-                          prefixIcon: const Icon(Icons.email_outlined),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
-                            vertical: ResponsiveUtils.responsiveSpacing(context, 16),
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!GetUtils.isEmail(value)) {
-                            return 'Please enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
+                    ),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
+
+                    // Email Field (only for email login)
+                    Obx(
+                      () => _loginMethod.value == 'email'
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha:0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  labelText: 'Email Address',
+                                  hintText: 'Enter your email',
+                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
+                                    vertical: ResponsiveUtils.responsiveSpacing(context, 16),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (_loginMethod.value == 'email') {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter your email';
+                                    }
+                                    if (!GetUtils.isEmail(value)) {
+                                      return 'Please enter a valid email';
+                                    }
+                                  }
+                                  return null;
+                                },
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
 
-                    // Password Field
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha:0.05),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Obx(
-                        () => TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword.value,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            hintText: 'Enter your password',
-                            prefixIcon: const Icon(Icons.lock_outlined),
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword.value
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
+                    // Password Field (only for email login)
+                    Obx(
+                      () => _loginMethod.value == 'email'
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha:0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              onPressed: () {
-                                _obscurePassword.value =
-                                    !_obscurePassword.value;
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
-                              borderSide: BorderSide.none,
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            contentPadding: EdgeInsets.symmetric(
-                              horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
-                              vertical: ResponsiveUtils.responsiveSpacing(context, 16),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
+                              child: Obx(
+                                () => TextFormField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword.value,
+                                  decoration: InputDecoration(
+                                    labelText: 'Password',
+                                    hintText: 'Enter your password',
+                                    prefixIcon: const Icon(Icons.lock_outlined),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _obscurePassword.value
+                                            ? Icons.visibility_outlined
+                                            : Icons.visibility_off_outlined,
+                                      ),
+                                      onPressed: () {
+                                        _obscurePassword.value =
+                                            !_obscurePassword.value;
+                                      },
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
+                                      vertical: ResponsiveUtils.responsiveSpacing(context, 16),
+                                    ),
+                                  ),
+                                  validator: (value) {
+                                    if (_loginMethod.value == 'email') {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Please enter your password';
+                                      }
+                                      if (value.length < 6) {
+                                        return 'Password must be at least 6 characters';
+                                      }
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 16)),
+
+                    // Secret Code Field (only for secret code login)
+                    Obx(
+                      () => _loginMethod.value == 'secret'
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha:0.05),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: TextFormField(
+                                controller: _secretCodeController,
+                                keyboardType: TextInputType.number,
+                                decoration: InputDecoration(
+                                  labelText: 'Secret Code',
+                                  hintText: 'Enter 6-digit code (e.g., 112233)',
+                                  prefixIcon: const Icon(Icons.security),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 16)),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                  contentPadding: EdgeInsets.symmetric(
+                                    horizontal: ResponsiveUtils.responsiveSpacing(context, 20),
+                                    vertical: ResponsiveUtils.responsiveSpacing(context, 16),
+                                  ),
+                                ),
+                                validator: (value) {
+                                  if (_loginMethod.value == 'secret') {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Please enter your secret code';
+                                    }
+                                    if (value.length != 6) {
+                                      return 'Secret code must be exactly 6 digits';
+                                    }
+                                    if (!RegExp(r'^\d{6}$').hasMatch(value)) {
+                                      return 'Secret code must contain only digits';
+                                    }
+                                  }
+                                  return null;
+                                },
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
 
-                    // Forgot Password
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Get.toNamed(Routes.FORGOT_PASSWORD);
-                        },
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(
-                            color: theme.AppTheme.primaryColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                    // Forgot Password (only for email login)
+                    Obx(
+                      () => _loginMethod.value == 'email'
+                          ? Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  Get.toNamed(Routes.FORGOT_PASSWORD);
+                                },
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: TextStyle(
+                                    color: theme.AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 24),
 
@@ -398,6 +526,56 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+      ),
+    );
+  }
+
+  Widget _buildLoginMethodButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return Builder(
+      builder: (context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 12)),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveUtils.responsiveSpacing(context, 12),
+            horizontal: ResponsiveUtils.responsiveSpacing(context, 16),
+          ),
+          decoration: BoxDecoration(
+            gradient: isSelected ? theme.AppTheme.primaryGradient : null,
+            color: isSelected ? null : Colors.white,
+            borderRadius: BorderRadius.circular(ResponsiveUtils.responsiveBorderRadius(context, 12)),
+            border: Border.all(
+              color: isSelected
+                  ? Colors.transparent
+                  : theme.AppTheme.primaryColor.withValues(alpha: 0.3),
+              width: 2,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: ResponsiveUtils.responsiveIconSize(context, 20),
+                color: isSelected ? Colors.white : theme.AppTheme.primaryColor,
+              ),
+              SizedBox(width: ResponsiveUtils.responsiveSpacing(context, 8)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : theme.AppTheme.primaryColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

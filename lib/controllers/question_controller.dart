@@ -16,6 +16,7 @@ class QuestionController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      print('DEBUG: QuestionController.fetchQuestionsByTest called for testId: $testId');
 
       final query = _firestoreService.queryWhereEqualTo(
         collectionPath: 'questions',
@@ -23,7 +24,23 @@ class QuestionController extends GetxController {
         value: testId,
       );
 
+      print('DEBUG: Executing Firestore query...');
       final snapshot = await query.get();
+      print('DEBUG: Query returned ${snapshot.docs.length} documents');
+
+      if (snapshot.docs.isEmpty) {
+        print('DEBUG: WARNING - No documents found in questions collection for testId: $testId');
+        print('DEBUG: This could mean:');
+        print('DEBUG: 1. The test has no questions added yet');
+        print('DEBUG: 2. Firestore security rules are blocking access');
+        print('DEBUG: 3. The questions collection structure is different');
+      } else {
+        print('DEBUG: Sample question data:');
+        if (snapshot.docs.isNotEmpty) {
+          final firstDoc = snapshot.docs.first.data();
+          print('DEBUG:   ${firstDoc.keys.join(', ')}');
+        }
+      }
 
       questions.value = snapshot.docs.map((doc) {
         return QuestionModel.fromJson(
@@ -33,7 +50,10 @@ class QuestionController extends GetxController {
       }).toList();
 
       questions.sort((a, b) => a.order.compareTo(b.order));
+      print('DEBUG: Loaded ${questions.length} questions after sorting');
     } catch (e) {
+      print('DEBUG: Error in fetchQuestionsByTest: $e');
+      print('DEBUG: Error type: ${e.runtimeType}');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
@@ -129,6 +149,20 @@ class QuestionController extends GetxController {
       );
       print('DEBUG: Document added successfully');
 
+      // Update test's questionCount
+      print('DEBUG: Updating test questionCount');
+      await fetchQuestionsByTest(testId: testId);
+      final questionCount = questions.length;
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'questionCount': questionCount,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
+      print('DEBUG: Test questionCount updated to $questionCount');
+
       print('DEBUG: Fetching questions by test');
       await fetchQuestionsByTest(testId: testId);
       print('DEBUG: Questions fetched');
@@ -189,6 +223,59 @@ class QuestionController extends GetxController {
     }
   }
 
+  Future<bool> addMultipleQuestions({
+    required String testId,
+    required List<Map<String, dynamic>> questionsData,
+  }) async {
+    try {
+      errorMessage.value = '';
+
+      await fetchQuestionsByTest(testId: testId);
+      int startingOrder = questions.length + 1;
+
+      // Prepare all question data for batch write
+      final List<Map<String, dynamic>> batchData = [];
+      for (int i = 0; i < questionsData.length; i++) {
+        final qData = questionsData[i];
+        final questionModel = QuestionModel(
+          testId: testId,
+          question: qData['question'],
+          optionA: qData['optionA'],
+          optionB: qData['optionB'],
+          optionC: qData['optionC'],
+          optionD: qData['optionD'],
+          correctAnswer: qData['correctAnswer'].toUpperCase(),
+          marks: qData['marks'],
+          order: startingOrder + i,
+          createdAt: DateTime.now(),
+        );
+        batchData.add(questionModel.toJson());
+      }
+
+      // Batch write all questions at once
+      await _firestoreService.batchAddDocuments(
+        collectionPath: 'questions',
+        dataList: batchData,
+      );
+
+      await fetchQuestionsByTest(testId: testId);
+      final questionCount = questions.length;
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'questionCount': questionCount,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    }
+  }
+
   Future<bool> addQuestionsFromBank({
     required String testId,
     required List<String> questionBankIds,
@@ -223,6 +310,16 @@ class QuestionController extends GetxController {
       }
 
       await fetchQuestionsByTest(testId: testId);
+      // Update test's questionCount
+      final questionCount = questions.length;
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'questionCount': questionCount,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
       return true;
     } catch (e) {
       errorMessage.value = e.toString();
@@ -290,6 +387,16 @@ class QuestionController extends GetxController {
 
       if (testId != null) {
         await fetchQuestionsByTest(testId: testId);
+        // Update test's questionCount
+        final questionCount = questions.length;
+        await _firestoreService.updateDocument(
+          collectionPath: 'tests',
+          documentId: testId,
+          data: {
+            'questionCount': questionCount,
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
+        );
       }
       return true;
     } catch (e) {
@@ -321,6 +428,41 @@ class QuestionController extends GetxController {
       }
 
       questions.clear();
+      // Update test's questionCount to 0
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'questionCount': 0,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> updateTestQuestionCount({required String testId}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      await fetchQuestionsByTest(testId: testId);
+      final questionCount = questions.length;
+      
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'questionCount': questionCount,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
+      
       return true;
     } catch (e) {
       errorMessage.value = e.toString();

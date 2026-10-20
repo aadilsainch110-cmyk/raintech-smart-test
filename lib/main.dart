@@ -15,6 +15,7 @@ import 'controllers/result_controller.dart';
 import 'controllers/enrollment_controller.dart';
 import 'controllers/exam_controller.dart';
 import 'controllers/attempt_controller.dart';
+import 'controllers/network_controller.dart';
 import 'services/data_init_service.dart';
 
 void main() async {
@@ -34,7 +35,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Initialize controllers
+    // Initialize global network controller first
+    Get.put(NetworkController(), permanent: true);
+
+    // Initialize other controllers
     Get.put(AuthController());
     Get.put(CourseController());
     Get.put(TestController());

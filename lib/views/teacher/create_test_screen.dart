@@ -32,6 +32,7 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
   String? _selectedShiftId;
   DateTime? _startDate;
   DateTime? _endDate;
+  bool _isCreating = false;
 
   @override
   void initState() {
@@ -53,8 +54,8 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
     super.dispose();
   }
 
-  Future<void> _handleCreateTest() async {
-    print('DEBUG: _handleCreateTest called');
+  Future<void> _handleCreateTest({required bool publish}) async {
+    print('DEBUG: _handleCreateTest called with publish: $publish');
     if (_formKey.currentState!.validate()) {
       print('DEBUG: Form validation passed');
       if (_selectedCourse == null) {
@@ -83,6 +84,36 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
       }
       print('DEBUG: Dates selected - Start: $_startDate, End: $_endDate');
 
+      // If publishing, show confirmation dialog
+      if (publish) {
+        final confirmed = await Get.dialog<bool>(
+          AlertDialog(
+            title: const Text('Publish Test'),
+            content: const Text(
+              'Are you sure you want to publish this test? Once published, it will be visible to students.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(result: false),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () => Get.back(result: true),
+                child: const Text('Publish'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) {
+          return;
+        }
+      }
+
+      // Set loading state
+      setState(() {
+        _isCreating = true;
+      });
+
       print('DEBUG: Calling createTest with params:');
       print('  - Title: ${_titleController.text.trim()}');
       print('  - Course ID: ${_selectedCourse!.id!}');
@@ -92,6 +123,7 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
       print('  - Total Marks: ${int.parse(_totalMarksController.text)}');
       print('  - Passing Marks: ${int.parse(_passingMarksController.text)}');
       print('  - Created By: ${_authController.currentUser!.id!}');
+      print('  - Status: ${publish ? "published" : "draft"}');
 
       final success = await _testController.createTest(
         title: _titleController.text.trim(),
@@ -107,29 +139,97 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
         createdBy: _authController.currentUser!.id!,
         startDate: _startDate,
         endDate: _endDate,
+        status: publish ? 'published' : 'draft',
       );
+
+      // Reset loading state
+      setState(() {
+        _isCreating = false;
+      });
 
       print('DEBUG: createTest returned: $success');
       if (success) {
         print('DEBUG: Test creation successful');
-        Get.snackbar(
-          'Success',
-          'Test created successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: AppTheme.successColor,
-          colorText: Colors.white,
+
+        // Clear form fields
+        _formKey.currentState!.reset();
+        _titleController.clear();
+        _descriptionController.clear();
+        _totalMarksController.text = '100';
+        _passingMarksController.text = '50';
+        _durationController.text = '60';
+        setState(() {
+          _selectedCourse = null;
+          _selectedClassId = null;
+          _selectedShiftId = null;
+          _startDate = null;
+          _endDate = null;
+        });
+
+        // Show success dialog
+        Get.dialog(
+          AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.check_circle,
+                  color: AppTheme.successColor,
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  publish
+                      ? 'Test Published Successfully! 🎉'
+                      : 'Test Saved as Draft! 📝',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  publish
+                      ? 'Your test has been published and is now visible to students.'
+                      : 'Your test has been saved as a draft. You can publish it later from the Tests screen.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Get.back(); // Close dialog
+                  Get.back(); // Go back to test list
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          ),
         );
-        Get.back();
       } else {
         print(
           'DEBUG: Test creation failed: ${_testController.errorMessage.value}',
         );
         Get.snackbar(
-          'Error',
-          _testController.errorMessage.value,
+          'Failed to create test. Please try again.',
+          '',
+          icon: const Icon(Icons.error_outline, color: Colors.white, size: 28),
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: AppTheme.errorColor,
           colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          margin: const EdgeInsets.all(16),
+          borderRadius: 12,
+          snackStyle: SnackStyle.GROUNDED,
         );
       }
     } else {
@@ -192,7 +292,17 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Test')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Get.back(),
+        ),
+        title: const Text('Create Test'),
+        backgroundColor: Colors.blueAccent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -357,19 +467,60 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
                 onTap: _selectEndDate,
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _handleCreateTest,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.cardColor,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isCreating
+                          ? null
+                          : () => _handleCreateTest(publish: false),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        disabledBackgroundColor: Colors.grey,
+                      ),
+                      child: _isCreating
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Save as Draft',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                    ),
                   ),
-                  child: const Text(
-                    'Create Test',
-                    style: TextStyle(fontSize: 16),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isCreating
+                          ? null
+                          : () => _handleCreateTest(publish: true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.cardColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        disabledBackgroundColor: Colors.grey,
+                      ),
+                      child: _isCreating
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Text(
+                              'Publish Test',
+                              style: TextStyle(fontSize: 16),
+                            ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

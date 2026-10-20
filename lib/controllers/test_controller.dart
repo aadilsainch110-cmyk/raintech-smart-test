@@ -53,10 +53,52 @@ class TestController extends GetxController {
           id: doc.id,
         );
       }).toList();
+
+      // Sync question counts with actual questions in database
+      await syncQuestionCountsForTests();
     } catch (e) {
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> syncQuestionCountsForTests() async {
+    try {
+      for (final test in tests) {
+        // Fetch actual question count from questions collection
+        final query = _firestoreService.queryWhereEqualTo(
+          collectionPath: 'questions',
+          field: 'testId',
+          value: test.id,
+        );
+        
+        final questionSnapshot = await query.get();
+        final actualQuestionCount = questionSnapshot.docs.length;
+        
+        // Update the test's questionCount with actual count
+        final updatedTest = test.copyWith(questionCount: actualQuestionCount);
+        
+        // Update in the list
+        final index = tests.indexWhere((t) => t.id == test.id);
+        if (index != -1) {
+          tests[index] = updatedTest;
+        }
+        
+        // Also update in Firestore if count is different
+        if (test.questionCount != actualQuestionCount) {
+          await _firestoreService.updateDocument(
+            collectionPath: 'tests',
+            documentId: test.id!,
+            data: {
+              'questionCount': actualQuestionCount,
+              'updatedAt': DateTime.now().toIso8601String(),
+            },
+          );
+        }
+      }
+    } catch (e) {
+      print('Error syncing question counts: $e');
     }
   }
 
@@ -112,6 +154,48 @@ class TestController extends GetxController {
     }
   }
 
+  /// Fetch published tests for specific enrolled courses (server-side filtering)
+  /// This ensures tests are filtered at the data-fetching level, not just in UI
+  Future<void> fetchPublishedTestsByCourseIds({required List<String> courseIds}) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      if (courseIds.isEmpty) {
+        // No enrolled courses - return empty list
+        tests.value = [];
+        return;
+      }
+
+      // Fetch published tests for enrolled courses
+      // Firestore doesn't support 'in' with 'whereEqualTo' for multiple fields in one query
+      // So we fetch all published tests and filter by course IDs
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'tests',
+        field: 'status',
+        value: 'published',
+      );
+
+      final snapshot = await query.get();
+
+      // Filter tests by enrolled course IDs (client-side but after fetching only published tests)
+      tests.value = snapshot.docs
+          .map((doc) => TestModel.fromJson(
+                doc.data() as Map<String, dynamic>,
+                id: doc.id,
+              ))
+          .where((test) => courseIds.contains(test.courseId))
+          .toList();
+
+      // Sync question counts with actual questions in database
+      await syncQuestionCountsForTests();
+    } catch (e) {
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<bool> createTest({
     required String title,
     String? description,
@@ -124,6 +208,7 @@ class TestController extends GetxController {
     required String createdBy,
     DateTime? startDate,
     DateTime? endDate,
+    String status = 'draft',
   }) async {
     print('DEBUG: TestController.createTest called');
     try {
@@ -149,7 +234,7 @@ class TestController extends GetxController {
         durationMinutes: durationMinutes,
         totalMarks: totalMarks,
         passingMarks: passingMarks,
-        status: 'draft',
+        status: status,
         createdBy: createdBy,
         questionCount: 0,
         startDate: startDate,
@@ -345,6 +430,76 @@ class TestController extends GetxController {
       return tests.firstWhere((test) => test.id == testId);
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<bool> updateTestQuestionCount({
+    required String testId,
+    required int questionCount,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      await _firestoreService.updateDocument(
+        collectionPath: 'tests',
+        documentId: testId,
+        data: {
+          'questionCount': questionCount,
+          'updatedAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      await fetchAllTests();
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  Future<bool> syncAllTestQuestionCounts() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final testSnapshot = await _firestoreService.getCollection(
+        collectionPath: 'tests',
+      );
+
+      for (final testDoc in testSnapshot.docs) {
+        final testId = testDoc.id;
+        
+        // Count questions for this test
+        final query = _firestoreService.queryWhereEqualTo(
+          collectionPath: 'questions',
+          field: 'testId',
+          value: testId,
+        );
+        
+        final questionSnapshot = await query.get();
+        final questionCount = questionSnapshot.docs.length;
+        
+        // Update test's questionCount
+        await _firestoreService.updateDocument(
+          collectionPath: 'tests',
+          documentId: testId,
+          data: {
+            'questionCount': questionCount,
+            'updatedAt': DateTime.now().toIso8601String(),
+          },
+        );
+      }
+
+      await fetchAllTests();
+      return true;
+    } catch (e) {
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 }
