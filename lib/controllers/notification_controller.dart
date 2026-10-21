@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import '../models/notification_model.dart';
 import '../controllers/auth_controller.dart';
@@ -16,7 +17,10 @@ class NotificationController extends GetxController {
     _authController = Get.find<AuthController>();
     _enrollmentController = Get.put(EnrollmentController());
     _loadNotifications();
-    _loadStudentEnrollments();
+    // Delay enrollment loading to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadStudentEnrollments();
+    });
     // Listen to enrollment changes to update filtered notifications
     ever(_enrollmentController.enrollments, (_) => _updateStudentNotifications());
   }

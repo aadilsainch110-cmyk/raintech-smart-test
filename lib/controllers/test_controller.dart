@@ -22,12 +22,18 @@ class TestController extends GetxController {
       );
 
       tests.value = snapshot.docs.map((doc) {
-        return TestModel.fromJson(
+        print('DEBUG: Fetching test document ${doc.id}');
+        print('DEBUG:   doc.id: "${doc.id}"');
+        print('DEBUG:   doc.id type: ${doc.id.runtimeType}');
+        final testModel = TestModel.fromJson(
           doc.data() as Map<String, dynamic>,
           id: doc.id,
         );
+        print('DEBUG:   TestModel.id after parse: "${testModel.id}"');
+        return testModel;
       }).toList();
     } catch (e) {
+      print('DEBUG: Error in fetchAllTests: $e');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
@@ -160,9 +166,12 @@ class TestController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      print('DEBUG: TestController.fetchPublishedTestsByCourseIds called');
+      print('DEBUG: Course IDs: $courseIds');
 
       if (courseIds.isEmpty) {
         // No enrolled courses - return empty list
+        print('DEBUG: No enrolled courses, returning empty list');
         tests.value = [];
         return;
       }
@@ -170,6 +179,7 @@ class TestController extends GetxController {
       // Fetch published tests for enrolled courses
       // Firestore doesn't support 'in' with 'whereEqualTo' for multiple fields in one query
       // So we fetch all published tests and filter by course IDs
+      print('DEBUG: Querying published tests...');
       final query = _firestoreService.queryWhereEqualTo(
         collectionPath: 'tests',
         field: 'status',
@@ -177,6 +187,7 @@ class TestController extends GetxController {
       );
 
       final snapshot = await query.get();
+      print('DEBUG: Published tests query returned ${snapshot.docs.length} documents');
 
       // Filter tests by enrolled course IDs (client-side but after fetching only published tests)
       tests.value = snapshot.docs
@@ -187,16 +198,22 @@ class TestController extends GetxController {
           .where((test) => courseIds.contains(test.courseId))
           .toList();
 
+      print('DEBUG: After filtering by enrolled courses: ${tests.length} tests');
+
       // Sync question counts with actual questions in database
+      print('DEBUG: Syncing question counts...');
       await syncQuestionCountsForTests();
+      print('DEBUG: Question counts synced');
     } catch (e) {
+      print('DEBUG: ERROR in fetchPublishedTestsByCourseIds: $e');
+      print('DEBUG: Error type: ${e.runtimeType}');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;
     }
   }
 
-  Future<bool> createTest({
+  Future<String?> createTest({
     required String title,
     String? description,
     required String courseId,
@@ -221,7 +238,7 @@ class TestController extends GetxController {
       if (passingMarks > totalMarks) {
         errorMessage.value = 'Passing marks cannot be greater than total marks';
         print('DEBUG: Validation failed - passing marks > total marks');
-        return false;
+        return null;
       }
       print('DEBUG: Validation passed');
 
@@ -246,20 +263,20 @@ class TestController extends GetxController {
       print('DEBUG: TestModel created: ${test.toJson()}');
 
       print('DEBUG: Adding document to Firestore collection: tests');
-      await _firestoreService.addDocument(
+      final docRef = await _firestoreService.addDocument(
         collectionPath: 'tests',
         data: test.toJson(),
       );
-      print('DEBUG: Document added successfully');
+      print('DEBUG: Document added successfully, ID: ${docRef.id}');
 
       print('DEBUG: Fetching all tests');
       await fetchAllTests();
       print('DEBUG: All tests fetched');
-      return true;
+      return docRef.id;
     } catch (e) {
       print('DEBUG: Error in createTest: $e');
       errorMessage.value = e.toString();
-      return false;
+      return null;
     } finally {
       isLoading.value = false;
     }
@@ -378,7 +395,37 @@ class TestController extends GetxController {
   }
 
   Future<bool> publishTest({required String testId}) async {
-    return await updateTest(testId: testId, status: 'published');
+    print('DEBUG: ============================================');
+    print('DEBUG: TestController.publishTest called');
+    print('DEBUG: testId: $testId');
+    print('DEBUG: ============================================');
+
+    try {
+      // Check if test has questions before publishing
+      print('DEBUG: Checking if test has questions...');
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'questions',
+        field: 'testId',
+        value: testId,
+      );
+
+      final questionSnapshot = await query.get();
+      final questionCount = questionSnapshot.docs.length;
+      print('DEBUG: Question count for test $testId: $questionCount');
+
+      if (questionCount == 0) {
+        print('DEBUG: Cannot publish test - no questions added');
+        errorMessage.value = 'Cannot publish test without questions. Please add at least one question before publishing.';
+        return false;
+      }
+
+      print('DEBUG: Test has $questionCount questions, proceeding to publish');
+      return await updateTest(testId: testId, status: 'published');
+    } catch (e) {
+      print('DEBUG: Error in publishTest: $e');
+      errorMessage.value = e.toString();
+      return false;
+    }
   }
 
   Future<bool> closeTest({required String testId}) async {

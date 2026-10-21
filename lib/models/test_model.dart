@@ -40,36 +40,47 @@ class TestModel {
   });
 
   factory TestModel.fromJson(Map<String, dynamic> json, {String? id}) {
-    return TestModel(
-      id: id ?? json['id'],
-      title: json['title'] ?? '',
-      description: json['description'],
-      courseId: json['courseId'] ?? '',
-      classId: json['classId'],
-      shiftId: json['shiftId'] ?? '',
-      durationMinutes: json['durationMinutes'] ?? 0,
-      totalMarks: json['totalMarks'] ?? 0,
-      passingMarks: json['passingMarks'] ?? 0,
-      status: json['status'] ?? 'draft',
-      createdBy: json['createdBy'] ?? '',
-      questionCount: json['questionCount'] ?? 0,
-      startDate: json['startDate'] != null
-          ? DateTime.parse(json['startDate'])
-          : null,
-      endDate: json['endDate'] != null
-          ? DateTime.parse(json['endDate'])
-          : null,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : null,
-      resultsReleased: json['resultsReleased'] ?? false,
-      resultsReleasedAt: json['resultsReleasedAt'] != null
-          ? DateTime.parse(json['resultsReleasedAt'])
-          : null,
-    );
+    try {
+      print('DEBUG: TestModel.fromJson called');
+      print('DEBUG:   id parameter: "$id"');
+      print('DEBUG:   json[\'id\']: "${json['id']}"');
+      print('DEBUG:   Using ID: "${id ?? json['id']}"');
+
+      return TestModel(
+        id: id ?? json['id'],
+        title: json['title'] ?? '',
+        description: json['description'],
+        courseId: json['courseId'] ?? '',
+        classId: json['classId'],
+        shiftId: json['shiftId'] ?? '',
+        durationMinutes: json['durationMinutes'] ?? 0,
+        totalMarks: json['totalMarks'] ?? 0,
+        passingMarks: json['passingMarks'] ?? 0,
+        status: json['status'] ?? 'draft',
+        createdBy: json['createdBy'] ?? '',
+        questionCount: json['questionCount'] ?? 0,
+        startDate: json['startDate'] != null
+            ? DateTime.parse(json['startDate'])
+            : null,
+        endDate: json['endDate'] != null
+            ? DateTime.parse(json['endDate'])
+            : null,
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : null,
+        updatedAt: json['updatedAt'] != null
+            ? DateTime.parse(json['updatedAt'])
+            : null,
+        resultsReleased: json['resultsReleased'] ?? false,
+        resultsReleasedAt: json['resultsReleasedAt'] != null
+            ? DateTime.parse(json['resultsReleasedAt'])
+            : null,
+      );
+    } catch (e) {
+      print('DEBUG: Error in TestModel.fromJson: $e');
+      print('DEBUG: JSON: $json');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

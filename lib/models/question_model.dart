@@ -26,21 +26,41 @@ class QuestionModel {
   });
 
   factory QuestionModel.fromJson(Map<String, dynamic> json, {String? id}) {
-    return QuestionModel(
-      id: id ?? json['id'],
-      testId: json['testId'],
-      question: json['question'] ?? '',
-      optionA: json['optionA'] ?? '',
-      optionB: json['optionB'] ?? '',
-      optionC: json['optionC'] ?? '',
-      optionD: json['optionD'] ?? '',
-      correctAnswer: json['correctAnswer'] ?? 'A',
-      marks: json['marks'] ?? 1,
-      order: json['order'] ?? 0,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : null,
-    );
+    try {
+      // Handle createdAt field - could be Timestamp or String
+      DateTime? parsedCreatedAt;
+      if (json['createdAt'] != null) {
+        if (json['createdAt'] is String) {
+          parsedCreatedAt = DateTime.parse(json['createdAt'] as String);
+        } else if (json['createdAt'].toString().contains('Timestamp')) {
+          // Firestore Timestamp - extract seconds
+          final timestamp = json['createdAt'];
+          if (timestamp is Map && timestamp.containsKey('_seconds')) {
+            parsedCreatedAt = DateTime.fromMillisecondsSinceEpoch(
+              (timestamp['_seconds'] as int) * 1000,
+            );
+          }
+        }
+      }
+
+      return QuestionModel(
+        id: id ?? json['id'],
+        testId: json['testId'],
+        question: json['question'] ?? '',
+        optionA: json['optionA'] ?? '',
+        optionB: json['optionB'] ?? '',
+        optionC: json['optionC'] ?? '',
+        optionD: json['optionD'] ?? '',
+        correctAnswer: json['correctAnswer'] ?? 'A',
+        marks: json['marks'] ?? 1,
+        order: json['order'] ?? 0,
+        createdAt: parsedCreatedAt,
+      );
+    } catch (e) {
+      print('DEBUG: Error parsing QuestionModel: $e');
+      print('DEBUG: JSON data: $json');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

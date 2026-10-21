@@ -13,6 +13,7 @@ class EnrollmentController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+      print('DEBUG: EnrollmentController.fetchStudentEnrollments called for studentId: $studentId');
 
       final query = _firestoreService.queryWhereEqualTo(
         collectionPath: 'enrollments',
@@ -20,7 +21,9 @@ class EnrollmentController extends GetxController {
         value: studentId,
       );
 
+      print('DEBUG: Querying enrollments collection...');
       final snapshot = await query.get();
+      print('DEBUG: Enrollments query returned ${snapshot.docs.length} documents');
 
       enrollments.value = snapshot.docs
           .map((doc) {
@@ -30,7 +33,11 @@ class EnrollmentController extends GetxController {
             );
           })
           .toList();
+
+      print('DEBUG: Parsed ${enrollments.length} enrollments');
     } catch (e) {
+      print('DEBUG: ERROR in fetchStudentEnrollments: $e');
+      print('DEBUG: Error type: ${e.runtimeType}');
       errorMessage.value = e.toString();
     } finally {
       isLoading.value = false;

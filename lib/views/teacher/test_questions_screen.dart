@@ -46,10 +46,21 @@ class _TestQuestionsScreenState extends State<TestQuestionsScreen> {
   }
 
   Future<void> _loadData() async {
+    print('=== DEBUG: Teacher TestQuestionsScreen _loadData START ===');
     _test = Get.arguments as TestModel?;
     if (_test != null) {
+      print('Test object received');
+      print('Test ID: "${_test!.id}"');
+      print('Test ID is null: ${_test!.id == null}');
+      print('Test ID length: ${_test!.id?.length}');
+      print('Test Title: ${_test!.title}');
+      print('Fetching questions for testId: "${_test!.id}"');
       await _questionController.fetchQuestionsByTest(testId: _test!.id!);
+      print('Questions loaded: ${_questionController.questions.length}');
+    } else {
+      print('ERROR: Test object is null!');
     }
+    print('=== DEBUG: _loadData END ===');
   }
 
   Future<void> _showAddQuestionDialog() async {

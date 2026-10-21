@@ -26,108 +26,188 @@ class _TestScreenState extends State<TestScreen> {
   final AttemptController _attemptController = Get.put(AttemptController());
   final EnrollmentController _enrollmentController = Get.put(EnrollmentController());
 
-  TestModel? _test;
-  List<QuestionModel> _questions = [];
+  final Rx<TestModel?> _test = Rx<TestModel?>(null);
 
   @override
   void initState() {
     super.initState();
-    _loadTest();
+    print('=== DEBUG: TestScreen initState START ===');
+    print('QuestionController instance: ${_questionController.hashCode}');
+    print('ExamController instance: ${_examController.hashCode}');
+    print('QuestionController initial questions: ${_questionController.questions.length}');
+    print('QuestionController initial isLoading: ${_questionController.isLoading.value}');
+    // Delay test loading to avoid setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('=== DEBUG: PostFrameCallback executing ===');
+      _loadTest();
+    });
+    print('=== DEBUG: TestScreen initState END ===');
   }
 
   Future<void> _loadTest() async {
-    _test = Get.arguments as TestModel?;
-    if (_test != null) {
-      print('DEBUG: ==================================');
-      print('DEBUG: Loading test - Test ID: ${_test!.id}');
-      print('DEBUG: Test Title: ${_test!.title}');
-      print('DEBUG: Test Status: ${_test!.status}');
-      print('DEBUG: Test Course ID: ${_test!.courseId}');
-      print('DEBUG: Test Question Count: ${_test!.questionCount}');
-      print('DEBUG: ==================================');
+    print('=== DEBUG: Student TestScreen _loadTest START ===');
+    try {
+      print('DEBUG: Getting test from Get.arguments');
+      _test.value = Get.arguments as TestModel?;
+      print('DEBUG: Test object received: ${_test.value != null}');
+      if (_test.value != null) {
+        print('Test object received from Get.arguments');
+        print('Test ID: "${_test.value!.id}"');
+        print('Test ID is null: ${_test.value!.id == null}');
+        print('Test ID length: ${_test.value!.id?.length}');
+        print('Test ID type: ${_test.value!.id.runtimeType}');
+        print('Test Title: ${_test.value!.title}');
+        print('Test Status: ${_test.value!.status}');
+        print('Test Course ID: ${_test.value!.courseId}');
+        print('Test Question Count: ${_test.value!.questionCount}');
 
-      // Verify student is enrolled in the test's course
-      print('DEBUG: Fetching student enrollments...');
-      await _enrollmentController.fetchStudentEnrollments(
-        studentId: _authController.currentUser!.id!,
-      );
-      print('DEBUG: Total enrollments: ${_enrollmentController.enrollments.length}');
+        if (_test.value!.id == null || _test.value!.id!.isEmpty) {
+          print('ERROR: Test ID is null or empty!');
+          Get.snackbar(
+            'Error',
+            'Invalid test ID. Please try again.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: theme.AppTheme.errorColor,
+            colorText: Colors.white,
+          );
+          Get.back();
+          print('=== DEBUG: _loadTest END (invalid test ID) ===');
+          return;
+        }
 
-      final isEnrolled = _enrollmentController.enrollments.any(
-        (e) => e.courseId == _test!.courseId && e.status == 'active',
-      );
-      print('DEBUG: Is enrolled in course ${_test!.courseId}: $isEnrolled');
+        // Verify student is enrolled in the test's course
+        print('DEBUG: Fetching student enrollments...');
+        print('DEBUG: Before fetch - QuestionController isLoading: ${_questionController.isLoading.value}');
+        try {
+          await _enrollmentController.fetchStudentEnrollments(
+            studentId: _authController.currentUser!.id!,
+          );
+          print('DEBUG: After fetchStudentEnrollments - QuestionController isLoading: ${_questionController.isLoading.value}');
+        } catch (e, stackTrace) {
+          print('DEBUG: ERROR fetching enrollments: $e');
+          print('DEBUG: Stack trace: $stackTrace');
+          print('DEBUG: Continuing with enrollment check using cached data');
+        }
+        print('DEBUG: Total enrollments: ${_enrollmentController.enrollments.length}');
 
-      if (!isEnrolled) {
-        print('DEBUG: Student not enrolled in course ${_test!.courseId}');
-        Get.snackbar(
-          'Access Denied',
-          'You are not enrolled in this course. Please enroll to access this test.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: theme.AppTheme.errorColor,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
+        final isEnrolled = _enrollmentController.enrollments.any(
+          (e) => e.courseId == _test.value!.courseId && e.status == 'active',
         );
-        Get.back();
-        return;
-      }
+        print('DEBUG: Is enrolled in course ${_test.value!.courseId}: $isEnrolled');
 
-      // Check if student has already attempted this test
-      print('DEBUG: Checking if student already attempted this test...');
-      final hasAttempted = await _attemptController.hasStudentAttemptedTest(
-        testId: _test!.id!,
-        studentId: _authController.currentUser!.id!,
-      );
-      print('DEBUG: Has attempted: $hasAttempted');
+        if (!isEnrolled) {
+          print('DEBUG: Student not enrolled in course ${_test.value!.courseId}');
+          Get.snackbar(
+            'Access Denied',
+            'You are not enrolled in this course. Please enroll to access this test.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: theme.AppTheme.errorColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          Get.back();
+          return;
+        }
 
-      if (hasAttempted) {
-        print('DEBUG: Student already attempted this test');
-        Get.snackbar(
-          'Test Already Attempted',
-          'You have already submitted this test. You cannot attempt it again.',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: theme.AppTheme.errorColor,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-        );
-        Get.back();
-        return;
-      }
+        // Check if student has already attempted this test
+        print('DEBUG: Checking if student already attempted this test...');
+        try {
+          final hasAttempted = await _attemptController.hasStudentAttemptedTest(
+            testId: _test.value!.id!,
+            studentId: _authController.currentUser!.id!,
+          );
+          print('DEBUG: Has attempted: $hasAttempted');
 
-      print('DEBUG: Fetching questions for test ${_test!.id}...');
-      await _questionController.fetchQuestionsByTest(testId: _test!.id!);
-      _questions = _questionController.questions.toList();
-      print('DEBUG: Loaded ${_questions.length} questions from controller');
+          if (hasAttempted) {
+            print('DEBUG: Student already attempted this test');
+            Get.snackbar(
+              'Test Already Attempted',
+              'You have already submitted this test. You cannot attempt it again.',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: theme.AppTheme.errorColor,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 4),
+            );
+            Get.back();
+            return;
+          }
+        } catch (e, stackTrace) {
+          print('DEBUG: ERROR checking attempt status: $e');
+          print('DEBUG: Stack trace: $stackTrace');
+          print('DEBUG: Continuing despite attempt check error');
+        }
 
-      if (_questions.isEmpty) {
-        print('DEBUG: ==================================');
-        print('DEBUG: ERROR: No questions found for test ${_test!.id}');
-        print('DEBUG: Test questionCount field: ${_test!.questionCount}');
+        print('DEBUG: Fetching questions for test ${_test.value!.id}...');
+        print('DEBUG: Test ID type: ${_test.value!.id.runtimeType}');
+        print('DEBUG: Test ID length: ${_test.value!.id?.length}');
+        print('DEBUG: Before clear - QuestionController questions: ${_questionController.questions.length}');
+        print('DEBUG: Before clear - QuestionController isLoading: ${_questionController.isLoading.value}');
+        print('DEBUG: Clearing previous questions from controller');
+        _questionController.questions.clear();
+        print('DEBUG: After clear - QuestionController questions: ${_questionController.questions.length}');
+        print('DEBUG: Controller questions cleared. Current count: ${_questionController.questions.length}');
+
+        print('DEBUG: Before fetchQuestionsByTest - QuestionController isLoading: ${_questionController.isLoading.value}');
+        try {
+          await _questionController.fetchQuestionsByTest(testId: _test.value!.id!);
+          print('DEBUG: After fetchQuestionsByTest - QuestionController isLoading: ${_questionController.isLoading.value}');
+        } catch (e, stackTrace) {
+          print('DEBUG: EXCEPTION in fetchQuestionsByTest: $e');
+          print('DEBUG: Stack trace: $stackTrace');
+          print('DEBUG: Error message in controller: ${_questionController.errorMessage.value}');
+        }
+        print('DEBUG: fetchQuestionsByTest completed');
+        print('DEBUG: Loaded ${_questionController.questions.length} questions from controller');
         print('DEBUG: Controller error message: ${_questionController.errorMessage.value}');
         print('DEBUG: Controller isLoading: ${_questionController.isLoading.value}');
-        print('DEBUG: ==================================');
 
+        // Only start exam if questions were loaded successfully
+        if (_questionController.questions.isEmpty) {
+          print('DEBUG: ERROR: No questions loaded, cannot start exam');
+          final errorMsg = _questionController.errorMessage.value.isNotEmpty
+              ? _questionController.errorMessage.value
+              : 'No questions found for this test. Please contact your teacher.';
+          Get.snackbar(
+            'Error',
+            errorMsg,
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: theme.AppTheme.errorColor,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 6),
+          );
+          Get.back();
+          return;
+        }
+
+        print('DEBUG: Starting exam with ${_questionController.questions.length} questions');
+        _examController.startExam(test: _test.value!, testQuestions: _questionController.questions.toList());
+        print('DEBUG: Exam started successfully');
+        print('DEBUG: ExamController questions count: ${_examController.questions.length}');
+        print('DEBUG: ==================================');
+      } else {
+        print('ERROR: Test object is null from Get.arguments');
         Get.snackbar(
-          'No Questions Available',
-          'This test has no questions yet. Please contact your teacher.\n\nTest ID: ${_test!.id}\nExpected: ${_test!.questionCount} questions',
+          'Error',
+          'Invalid test data. Please try again.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: theme.AppTheme.errorColor,
           colorText: Colors.white,
-          duration: const Duration(seconds: 8),
         );
         Get.back();
-        return;
       }
-
-      print('DEBUG: Questions loaded successfully:');
-      for (var i = 0; i < _questions.length; i++) {
-        print('DEBUG:   Question ${i + 1}: ${_questions[i].question.substring(0, 30)}...');
-      }
-
-      _examController.startExam(test: _test!, testQuestions: _questions);
-      print('DEBUG: Exam started successfully');
-      print('DEBUG: ==================================');
+    } catch (e, stackTrace) {
+      print('DEBUG: UNEXPECTED ERROR in _loadTest: $e');
+      print('DEBUG: Stack trace: $stackTrace');
+      Get.snackbar(
+        'Error',
+        'An unexpected error occurred: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: theme.AppTheme.errorColor,
+        colorText: Colors.white,
+      );
+      Get.back();
     }
+    print('=== DEBUG: Student TestScreen _loadTest END ===');
   }
 
   @override
@@ -138,7 +218,7 @@ class _TestScreenState extends State<TestScreen> {
 
   Future<void> _handleSubmit() async {
     final answeredCount = _examController.answeredCount;
-    final totalQuestions = _questions.length;
+    final totalQuestions = _examController.questions.length;
 
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
@@ -176,14 +256,14 @@ class _TestScreenState extends State<TestScreen> {
           duration: const Duration(seconds: 3),
         );
 
-        if (_test != null) {
+        if (_test.value != null) {
           final resultSaved = await _resultController.calculateAndSaveResult(
-            testId: _test!.id!,
+            testId: _test.value!.id!,
             studentId: currentUser.id!,
-            questions: _questions,
+            questions: _examController.questions.toList(),
             answers: _examController.answers,
-            totalMarks: _test!.totalMarks,
-            passingMarks: _test!.passingMarks,
+            totalMarks: _test.value!.totalMarks,
+            passingMarks: _test.value!.passingMarks,
           );
 
           if (resultSaved) {
@@ -323,18 +403,31 @@ class _TestScreenState extends State<TestScreen> {
           ),
         ],
       ),
-      body: _test == null
-          ? const Center(child: CircularProgressIndicator())
-          : ResponsiveUtils.buildResponsiveContent(
-              context: context,
-              child: _buildTestBody(),
-            ),
+      body: Obx(() {
+        if (_test.value == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return ResponsiveUtils.buildResponsiveContent(
+          context: context,
+          child: _buildTestBody(),
+        );
+      }),
     );
   }
 
   Widget _buildTestBody() {
     return Obx(() {
-      if (_questionController.isLoading.value) {
+      print('=== DEBUG: _buildTestBody rebuilding ===');
+      print('QuestionController.isLoading: ${_questionController.isLoading.value}');
+      print('QuestionController.questions.length: ${_questionController.questions.length}');
+      print('QuestionController.errorMessage: "${_questionController.errorMessage.value}"');
+      print('ExamController.questions.length: ${_examController.questions.length}');
+      print('ExamController.isSubmitted: ${_examController.isSubmitted.value}');
+
+      // Use question controller loading state only during initial load
+      // Once exam starts, use exam controller state
+      if (_questionController.isLoading.value && !_examController.isSubmitted.value) {
+        print('DEBUG: Showing loading indicator');
         return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -347,7 +440,8 @@ class _TestScreenState extends State<TestScreen> {
         );
       }
 
-      if (_questionController.errorMessage.value.isNotEmpty) {
+      // Show error from question controller during initial load
+      if (_questionController.errorMessage.value.isNotEmpty && _examController.questions.isEmpty) {
         return Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -383,7 +477,7 @@ class _TestScreenState extends State<TestScreen> {
         );
       }
 
-      if (_questions.isEmpty) {
+      if (_examController.questions.isEmpty) {
         return const Center(
           child: Padding(
             padding: EdgeInsets.all(24),
@@ -435,7 +529,7 @@ class _TestScreenState extends State<TestScreen> {
       }
 
       final currentIndex = _examController.currentQuestionIndex.value;
-      final currentQuestion = _questions[currentIndex];
+      final currentQuestion = _examController.questions[currentIndex];
 
       return Column(
         children: [
@@ -459,7 +553,7 @@ class _TestScreenState extends State<TestScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Question ${currentIndex + 1} / ${_questions.length}',
+            'Question ${currentIndex + 1} / ${_examController.questions.length}',
             style: TextStyle(
               color: Colors.white,
               fontSize: ResponsiveUtils.responsiveFontSize(context, 14),
@@ -468,7 +562,7 @@ class _TestScreenState extends State<TestScreen> {
           ),
           Obx(
             () => Text(
-              'Answered: ${_examController.answeredCount}/${_questions.length}',
+              'Answered: ${_examController.answeredCount}/${_examController.questions.length}',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: ResponsiveUtils.responsiveFontSize(context, 12),
@@ -605,8 +699,8 @@ class _TestScreenState extends State<TestScreen> {
                 child: Wrap(
                   spacing: ResponsiveUtils.responsiveSpacing(context, 6),
                   runSpacing: ResponsiveUtils.responsiveSpacing(context, 6),
-                  children: List.generate(_questions.length, (index) {
-                    final question = _questions[index];
+                  children: List.generate(_examController.questions.length, (index) {
+                    final question = _examController.questions[index];
                     final isAnswered = _examController.hasAnsweredQuestion(
                       question.order,
                     );
@@ -695,7 +789,7 @@ class _TestScreenState extends State<TestScreen> {
                 child: ElevatedButton(
                   onPressed:
                       _examController.currentQuestionIndex.value <
-                          _questions.length - 1
+                          _examController.questions.length - 1
                       ? _examController.nextQuestion
                       : null,
                   style: ElevatedButton.styleFrom(

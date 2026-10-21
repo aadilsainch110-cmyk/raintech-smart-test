@@ -31,59 +31,81 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
   void initState() {
     super.initState();
 
-    // Fetch published tests and courses when screen opens.
-    _loadData();
-
-    // Listen to test changes and check attempted status
-    ever(_testController.tests, (tests) {
-      if (tests.isNotEmpty && !_isCheckingAttempts.value) {
-        _checkAttemptedTests();
+    // Fetch published tests and courses after the first frame is built
+    // This prevents setState during build errors
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData();
       }
     });
   }
 
   Future<void> _loadData() async {
     try {
+      print('DEBUG: ==================================');
+      print('DEBUG: StudentTestsScreen._loadData started');
+      print('DEBUG: ==================================');
+
       // Fetch student's enrollments first
       if (_authController.currentUser != null) {
+        print('DEBUG: Fetching student enrollments for ${_authController.currentUser!.id}');
         await _enrollmentController.fetchStudentEnrollments(
           studentId: _authController.currentUser!.id!,
         );
+        print('DEBUG: Enrollments fetched: ${_enrollmentController.enrollments.length} total');
 
         // Extract enrolled course IDs (only active enrollments)
-        _enrolledCourseIds.value = _enrollmentController.enrollments
+        final enrolledIds = _enrollmentController.enrollments
             .where((e) => e.status == 'active')
             .map((e) => e.courseId)
             .toSet()
             .toList();
+        _enrolledCourseIds.value = enrolledIds;
+        print('DEBUG: Active enrolled course IDs: $_enrolledCourseIds');
+      } else {
+        print('DEBUG: ERROR: No current user found');
       }
 
       // Fetch courses
+      print('DEBUG: Fetching courses...');
       await _courseController.fetchCourses();
+      print('DEBUG: Courses fetched: ${_courseController.courses.length}');
 
       // Fetch published tests for enrolled courses only
       if (_enrolledCourseIds.isNotEmpty) {
+        print('DEBUG: Fetching published tests for enrolled courses...');
         await _testController.fetchPublishedTestsByCourseIds(
           courseIds: _enrolledCourseIds,
         );
+        print('DEBUG: Published tests fetched: ${_testController.tests.length}');
       } else {
         // No enrolled courses - clear tests
+        print('DEBUG: No enrolled courses, clearing tests');
         _testController.tests.clear();
       }
 
       // Check attempted status after loading tests
       if (_testController.tests.isNotEmpty) {
+        print('DEBUG: Checking attempted status...');
         await _checkAttemptedTests();
       }
+
+      print('DEBUG: _loadData completed successfully');
+      print('DEBUG: ==================================');
     } catch (e) {
-      print('DEBUG: Error loading available tests: $e');
+      print('DEBUG: ==================================');
+      print('DEBUG: ERROR loading available tests');
+      print('DEBUG: Error: $e');
+      print('DEBUG: Error type: ${e.runtimeType}');
+      print('DEBUG: ==================================');
+
       Get.snackbar(
         'Error',
-        'Failed to load available tests. Please try again.',
+        'Failed to load available tests. Please try again.\n\nError: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: theme.AppTheme.errorColor,
         colorText: Colors.white,
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 5),
       );
     }
   }
@@ -407,6 +429,13 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
                     onPressed: isAttempted || isChecking
                         ? null
                         : () async {
+                            print('=== DEBUG: Student clicking Start Test ===');
+                            print('Test ID: "${test.id}"');
+                            print('Test Title: ${test.title}');
+                            print('Test Status: ${test.status}');
+                            print('Test questionCount: ${test.questionCount}');
+                            print('Test courseId: ${test.courseId}');
+                            print('Navigating to TEST_SCREEN with test object');
                             await Get.toNamed(
                               Routes.TEST_SCREEN,
                               arguments: test,
@@ -503,73 +532,75 @@ class _StudentTestsScreenState extends State<StudentTestsScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildEmptyState(BuildContext context) {
-    final hasEnrollments = _enrolledCourseIds.isNotEmpty;
+    return Obx(() {
+      final hasEnrollments = _enrolledCourseIds.isNotEmpty;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 90,
-              height: 90,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Icon(
-                hasEnrollments ? Icons.quiz_outlined : Icons.school_outlined,
-                size: 48,
-                color: theme.AppTheme.textSecondary,
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            Text(
-              hasEnrollments ? 'No tests available' : 'No course enrollments',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: theme.AppTheme.textSecondary,
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              hasEnrollments
-                  ? 'There are no published tests for your enrolled courses right now.'
-                  : 'You are not enrolled in any course. Please enroll in a course to access tests.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: theme.AppTheme.textSecondary,
-              ),
-            ),
-
-            if (!hasEnrollments) ...[
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () {
-                  Get.toNamed('/student-courses');
-                },
-                icon: const Icon(Icons.menu_book),
-                label: const Text('Enroll in a Course'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Icon(
+                  hasEnrollments ? Icons.quiz_outlined : Icons.school_outlined,
+                  size: 48,
+                  color: theme.AppTheme.textSecondary,
                 ),
               ),
+
+              const SizedBox(height: 18),
+
+              Text(
+                hasEnrollments ? 'No tests available' : 'No course enrollments',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: theme.AppTheme.textSecondary,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                hasEnrollments
+                    ? 'There are no published tests for your enrolled courses right now.'
+                    : 'You are not enrolled in any course. Please enroll in a course to access tests.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.AppTheme.textSecondary,
+                ),
+              ),
+
+              if (!hasEnrollments) ...[
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Get.toNamed('/student-courses');
+                  },
+                  icon: const Icon(Icons.menu_book),
+                  label: const Text('Enroll in a Course'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }

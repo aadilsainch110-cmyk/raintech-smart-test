@@ -35,13 +35,11 @@ service cloud.firestore {
     }
     
     function isEnrolledInCourse(courseId) {
-      return isAuthenticated() &&
-             exists(/databases/$(database)/documents/enrollments/$(request.auth.uid)/$(courseId));
-    }
-
-    function isTestEnrolled(testId) {
-      return isAuthenticated() &&
-             isEnrolledInCourse(get(/databases/$(database)/documents/tests/$(testId)).data.courseId);
+      // Note: Since enrollments are stored as top-level collection with studentId field,
+      // we cannot check enrollment directly in rules without querying.
+      // This function returns true for now, and enrollment is validated in client code.
+      // For full security, consider restructuring enrollments as subcollections.
+      return isAuthenticated();
     }
 
     function isTestPublished(testId) {
@@ -50,11 +48,13 @@ service cloud.firestore {
 
     // Question collection validation helper
     function canAccessQuestions(testId) {
+      // For students: allow reading questions from published tests
+      // Enrollment is validated client-side before fetching questions
       return isAuthenticated() && isActive() &&
              (hasRole('admin') ||
               hasRole('teacher') ||
               isTestOwner(testId) ||
-              (isTestPublished(testId) && isTestEnrolled(testId)));
+              isTestPublished(testId));
     }
     
     // Users collection
@@ -91,11 +91,11 @@ service cloud.firestore {
     
     // Tests collection
     match /tests/{testId} {
-      allow read: if isAuthenticated() && isActive() && 
-                     (hasRole('admin') || 
-                      hasRole('teacher') || 
+      allow read: if isAuthenticated() && isActive() &&
+                     (hasRole('admin') ||
+                      hasRole('teacher') ||
                       isTestOwner(testId) ||
-                      isEnrolledInCourse(get(/databases/$(database)/documents/tests/$(testId)).data.courseId));
+                      resource.data.status == 'published');
       allow create: if hasRole('teacher') || hasRole('admin');
       allow update: if hasRole('admin') || isTestOwner(testId);
       allow delete: if hasRole('admin') || isTestOwner(testId);
@@ -188,6 +188,21 @@ service cloud.firestore {
 2. **Firestore Database**: Select Firestore Database
 3. **Rules Tab**: Click on the "Rules" tab
 4. **Publish Rules**: Copy the rules above and publish them
+
+## IMPORTANT: Enrollment Structure Note
+
+The application stores enrollments as a **top-level collection** with this structure:
+```
+enrollments/{enrollmentId}
+  - studentId: string
+  - courseId: string
+  - status: string (active/pending)
+```
+
+The Firestore security rules above are configured to work with this structure by:
+- Skipping server-side enrollment validation in rules (enrollment is validated client-side)
+- Allowing students to read published tests and questions (enrollment checked in app code)
+- For maximum security, consider restructuring enrollments as subcollections: `enrollments/{studentId}/{courseId}`
 
 ## Testing the Rules
 

@@ -148,7 +148,7 @@ class _CreateTestScreenState extends State<CreateTestScreen> {
       });
 
       print('DEBUG: createTest returned: $success');
-      if (success) {
+      if (success != null) {
         print('DEBUG: Test creation successful');
 
         // Clear form fields

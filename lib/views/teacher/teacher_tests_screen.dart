@@ -443,6 +443,11 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                 icon: Icons.edit_note,
                                 label: 'Questions',
                                 onPressed: () {
+                                  print('=== DEBUG: Teacher clicking Questions button ===');
+                                  print('Test ID: "${test.id}"');
+                                  print('Test Title: ${test.title}');
+                                  print('Test Status: ${test.status}');
+                                  print('Navigating to TEST_QUESTIONS with test object');
                                   Get.toNamed(
                                     Routes.TEST_QUESTIONS,
                                     arguments: test,
@@ -488,9 +493,30 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
                                       ),
                                     );
                                     if (confirmed == true) {
-                                      await _testController.publishTest(
+                                      final success = await _testController.publishTest(
                                         testId: test.id!,
                                       );
+                                      if (!success) {
+                                        Get.snackbar(
+                                          'Publish Failed',
+                                          _testController.errorMessage.value.isNotEmpty
+                                              ? _testController.errorMessage.value
+                                              : 'Failed to publish test. Please try again.',
+                                          snackPosition: SnackPosition.BOTTOM,
+                                          backgroundColor: AppTheme.errorColor,
+                                          colorText: Colors.white,
+                                          duration: const Duration(seconds: 4),
+                                        );
+                                      } else {
+                                        Get.snackbar(
+                                          'Success',
+                                          'Test published successfully',
+                                          snackPosition: SnackPosition.BOTTOM,
+                                          backgroundColor: AppTheme.successColor,
+                                          colorText: Colors.white,
+                                          duration: const Duration(seconds: 3),
+                                        );
+                                      }
                                     }
                                   },
                                   isPrimary: true,

@@ -13,10 +13,18 @@ class QuestionController extends GetxController {
   final RxString errorMessage = ''.obs;
 
   Future<void> fetchQuestionsByTest({required String testId}) async {
+    print('=== DEBUG: fetchQuestionsByTest ENTRY ===');
+    print('Before isLoading set to true: ${isLoading.value}');
     try {
       isLoading.value = true;
+      print('After isLoading set to true: ${isLoading.value}');
       errorMessage.value = '';
       print('DEBUG: QuestionController.fetchQuestionsByTest called for testId: $testId');
+
+      print('=== DEBUG: fetchQuestionsByTest START ===');
+      print('Input testId: "$testId"');
+      print('testId length: ${testId.length}');
+      print('testId type: ${testId.runtimeType}');
 
       final query = _firestoreService.queryWhereEqualTo(
         collectionPath: 'questions',
@@ -24,39 +32,70 @@ class QuestionController extends GetxController {
         value: testId,
       );
 
-      print('DEBUG: Executing Firestore query...');
+      print('Executing Firestore query...');
+      print('Collection: questions');
+      print('Field: testId');
+      print('Value: "$testId"');
+
       final snapshot = await query.get();
-      print('DEBUG: Query returned ${snapshot.docs.length} documents');
+      print('Query completed');
+      print('Document count returned: ${snapshot.docs.length}');
 
       if (snapshot.docs.isEmpty) {
-        print('DEBUG: WARNING - No documents found in questions collection for testId: $testId');
-        print('DEBUG: This could mean:');
-        print('DEBUG: 1. The test has no questions added yet');
-        print('DEBUG: 2. Firestore security rules are blocking access');
-        print('DEBUG: 3. The questions collection structure is different');
+        print('*** ZERO DOCUMENTS RETURNED ***');
+        print('Query: questions where testId == "$testId"');
+        print('This suggests no questions exist with this testId in Firestore');
+        print('Possible causes:');
+        print('1. Questions were never saved with this testId');
+        print('2. Questions were saved with a different testId value');
+        print('3. Firestore security rules are blocking read access');
       } else {
-        print('DEBUG: Sample question data:');
-        if (snapshot.docs.isNotEmpty) {
-          final firstDoc = snapshot.docs.first.data();
-          print('DEBUG:   ${firstDoc.keys.join(', ')}');
-        }
+        print('*** ${snapshot.docs.length} DOCUMENTS FOUND ***');
+        print('Sample question data:');
+        final firstDoc = snapshot.docs.first.data() as Map<String, dynamic>;
+        print('Document testId field: ${firstDoc['testId']}');
+        print('testId matches: ${firstDoc['testId'] == testId}');
+        print('Fields: ${firstDoc.keys.join(', ')}');
       }
 
+      print('Starting to parse ${snapshot.docs.length} documents...');
       questions.value = snapshot.docs.map((doc) {
-        return QuestionModel.fromJson(
-          doc.data() as Map<String, dynamic>,
-          id: doc.id,
-        );
+        try {
+          final data = doc.data() as Map<String, dynamic>;
+          print('Parsing document ${doc.id}');
+          print('  testId in document: ${data['testId']}');
+          print('  testId matches input: ${data['testId'] == testId}');
+          final model = QuestionModel.fromJson(
+            data,
+            id: doc.id,
+          );
+          print('  Parsed successfully');
+          return model;
+        } catch (e) {
+          print('  ERROR parsing document ${doc.id}: $e');
+          rethrow;
+        }
       }).toList();
 
+      print('Parsed ${questions.length} questions successfully');
       questions.sort((a, b) => a.order.compareTo(b.order));
-      print('DEBUG: Loaded ${questions.length} questions after sorting');
-    } catch (e) {
-      print('DEBUG: Error in fetchQuestionsByTest: $e');
-      print('DEBUG: Error type: ${e.runtimeType}');
+      print('Questions assigned to controller: ${questions.length}');
+      print('Controller isLoading: ${isLoading.value}');
+      print('Controller errorMessage: "${errorMessage.value}"');
+      print('=== DEBUG: fetchQuestionsByTest END ===');
+    } catch (e, stackTrace) {
+      print('*** EXCEPTION IN fetchQuestionsByTest ***');
+      print('Exception: $e');
+      print('Exception type: ${e.runtimeType}');
+      print('Stack trace: $stackTrace');
       errorMessage.value = e.toString();
+      print('errorMessage set to: "${errorMessage.value}"');
+      print('=== DEBUG: fetchQuestionsByTest END (exception) ===');
     } finally {
+      print('Before isLoading set to false: ${isLoading.value}');
       isLoading.value = false;
+      print('After isLoading set to false: ${isLoading.value}');
+      print('=== DEBUG: fetchQuestionsByTest EXIT ===');
     }
   }
 
@@ -119,14 +158,16 @@ class QuestionController extends GetxController {
     required int marks,
     required int order,
   }) async {
-    print('DEBUG: QuestionController.addQuestion called');
-    print('DEBUG: testId: $testId');
-    print('DEBUG: question: $question');
-    print('DEBUG: order: $order');
+    print('=== DEBUG: addQuestion START ===');
+    print('Input testId: "$testId"');
+    print('testId length: ${testId.length}');
+    print('testId type: ${testId.runtimeType}');
+    print('question: $question');
+    print('order: $order');
     try {
       isLoading.value = true;
       errorMessage.value = '';
-      print('DEBUG: Creating QuestionModel');
+      print('Creating QuestionModel');
 
       final questionModel = QuestionModel(
         testId: testId,
@@ -140,14 +181,23 @@ class QuestionController extends GetxController {
         order: order,
         createdAt: DateTime.now(),
       );
-      print('DEBUG: QuestionModel created: ${questionModel.toJson()}');
+      print('=== DEBUG: addQuestion START ===');
+      print('Input testId: "$testId"');
+      print('testId length: ${testId.length}');
+      print('testId type: ${testId.runtimeType}');
+      print('QuestionModel created');
+      print('QuestionModel.testId: "${questionModel.testId}"');
+      print('Question data to save:');
+      print(questionModel.toJson());
 
-      print('DEBUG: Adding document to Firestore collection: questions');
+      print('Saving to Firestore...');
+      print('Collection: questions');
+      print('Data: ${questionModel.toJson()}');
       await _firestoreService.addDocument(
         collectionPath: 'questions',
         data: questionModel.toJson(),
       );
-      print('DEBUG: Document added successfully');
+      print('Question saved successfully to Firestore');
 
       // Update test's questionCount
       print('DEBUG: Updating test questionCount');
@@ -165,11 +215,16 @@ class QuestionController extends GetxController {
 
       print('DEBUG: Fetching questions by test');
       await fetchQuestionsByTest(testId: testId);
-      print('DEBUG: Questions fetched');
+      print('Question count after refresh: ${questions.length}');
+      print('=== DEBUG: addQuestion END (success) ===');
       return true;
     } catch (e) {
-      print('DEBUG: Error in addQuestion: $e');
+      print('*** EXCEPTION IN addQuestion ***');
+      print('Exception: $e');
+      print('Exception type: ${e.runtimeType}');
       errorMessage.value = e.toString();
+      print('errorMessage set to: "${errorMessage.value}"');
+      print('=== DEBUG: addQuestion END (exception) ===');
       return false;
     } finally {
       isLoading.value = false;
@@ -227,11 +282,17 @@ class QuestionController extends GetxController {
     required String testId,
     required List<Map<String, dynamic>> questionsData,
   }) async {
+    print('=== DEBUG: addMultipleQuestions START ===');
+    print('Input testId: "$testId"');
+    print('testId length: ${testId.length}');
+    print('testId type: ${testId.runtimeType}');
+    print('Number of questions to import: ${questionsData.length}');
     try {
       errorMessage.value = '';
 
       await fetchQuestionsByTest(testId: testId);
       int startingOrder = questions.length + 1;
+      print('Existing questions count: $startingOrder');
 
       // Prepare all question data for batch write
       final List<Map<String, dynamic>> batchData = [];
@@ -252,11 +313,18 @@ class QuestionController extends GetxController {
         batchData.add(questionModel.toJson());
       }
 
+      print('Prepared ${batchData.length} questions for batch import');
+      print('Each question has testId: "$testId"');
+
       // Batch write all questions at once
+      print('Executing batch write to Firestore...');
+      print('Collection: questions');
+      print('Number of documents: ${batchData.length}');
       await _firestoreService.batchAddDocuments(
         collectionPath: 'questions',
         dataList: batchData,
       );
+      print('Batch write completed successfully');
 
       await fetchQuestionsByTest(testId: testId);
       final questionCount = questions.length;
@@ -269,9 +337,16 @@ class QuestionController extends GetxController {
         },
       );
 
+      print('Question count after refresh: $questionCount');
+      print('=== DEBUG: addMultipleQuestions END (success) ===');
       return true;
     } catch (e) {
+      print('*** EXCEPTION IN addMultipleQuestions ***');
+      print('Exception: $e');
+      print('Exception type: ${e.runtimeType}');
       errorMessage.value = e.toString();
+      print('errorMessage set to: "${errorMessage.value}"');
+      print('=== DEBUG: addMultipleQuestions END (exception) ===');
       return false;
     }
   }
