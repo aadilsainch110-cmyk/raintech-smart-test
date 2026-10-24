@@ -97,18 +97,10 @@ class MarksheetPreviewScreen extends StatelessWidget {
   Widget _buildHeader() {
     return Column(
       children: [
-        Container(
+        Image.asset(
+          'assets/logo/logo.png',
           width: 80,
           height: 80,
-          decoration: BoxDecoration(
-            gradient: theme.AppTheme.primaryGradient,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.school,
-            size: 48,
-            color: Colors.white,
-          ),
         ),
         const SizedBox(height: 16),
         Text(

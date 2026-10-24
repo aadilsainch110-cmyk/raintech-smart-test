@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -13,7 +12,6 @@ class AuthController extends GetxController {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
   final PreferencesService _prefsService = PreferencesService();
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   final Rx<User?> _firebaseUser = Rx<User?>(null);
   final Rx<UserModel?> _currentUser = Rx<UserModel?>(null);
@@ -174,18 +172,76 @@ class AuthController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
+      print('DEBUG: signInWithSecretCode called');
+      print('  - Secret Code: $secretCode');
+
       // Validate secret code format (exactly 6 digits)
       if (!SecretCodeService.isValidSecretCodeFormat(secretCode)) {
         errorMessage.value = 'Secret code must be exactly 6 digits.';
+        print('  - Invalid format');
         return false;
       }
 
-      // Call Cloud Function for secure verification
-      final result = await _functions.httpsCallable('verifySecretCode').call({
-        'secretCode': secretCode,
-      });
+      print('  - Format valid, querying Firestore directly (fallback)...');
 
-      final userData = result.data as Map<String, dynamic>;
+      // Fallback: Query Firestore directly instead of using Cloud Functions
+      final query = _firestoreService.queryWhereEqualTo(
+        collectionPath: 'users',
+        field: 'secretCode',
+        value: secretCode,
+      );
+
+      final snapshot = await query.get();
+
+      if (snapshot.docs.isEmpty) {
+        errorMessage.value = 'Invalid secret code.';
+        print('  - No user found with this secret code');
+        return false;
+      }
+
+      final userDoc = snapshot.docs.first;
+      final userData = userDoc.data() as Map<String, dynamic>?;
+
+      if (userData == null) {
+        errorMessage.value = 'User data not found.';
+        print('  - User data is null');
+        return false;
+      }
+
+      print('  - User found:');
+      print('    - Name: ${userData['name']}');
+      print('    - Email: ${userData['email']}');
+      print('    - Role: ${userData['role']}');
+      print('    - isActive: ${userData['isActive']}');
+      print('    - approvalStatus: ${userData['approvalStatus']}');
+
+      // Check if account is active
+      if (userData['isActive'] == false) {
+        errorMessage.value = 'This account has been deactivated.';
+        print('  - Account is deactivated');
+        return false;
+      }
+
+      // Check approval status
+      final approvalStatus = userData['approvalStatus'];
+      if (approvalStatus == 'pending') {
+        errorMessage.value = 'Your account is pending approval. Admin Approved you and then enter.';
+        print('  - Account is pending approval');
+        return false;
+      }
+
+      if (approvalStatus == 'rejected') {
+        errorMessage.value = 'Your account has been rejected by Admin.';
+        print('  - Account is rejected');
+        return false;
+      }
+
+      // Admin cannot login with secret code
+      if (userData['role'] == 'admin') {
+        errorMessage.value = 'Admin must use email/password login.';
+        print('  - Admin cannot use secret code');
+        return false;
+      }
 
       // Set current user
       _currentUser.value = UserModel.fromJson(
@@ -196,42 +252,27 @@ class AuthController extends GetxController {
           'isActive': userData['isActive'],
           'approvalStatus': userData['approvalStatus'],
         },
-        id: userData['userId'],
+        id: userDoc.id,
       );
 
       // Save login state
       await _prefsService.setLoginState(
         isLoggedIn: true,
         userRole: userData['role'],
-        userId: userData['userId'],
+        userId: userDoc.id,
       );
+
+      print('  - Login state saved');
 
       // Navigate based on role
       _hasNavigated = false;
       _navigateBasedOnRole();
       _hasNavigated = true;
 
+      print('  - Navigation completed');
       return true;
-    } on FirebaseFunctionsException catch (e) {
-      // Handle Cloud Function errors
-      switch (e.code) {
-        case 'invalid-argument':
-          errorMessage.value = e.message ?? 'Invalid secret code format.';
-          break;
-        case 'not-found':
-          errorMessage.value = e.message ?? 'Invalid secret code.';
-          break;
-        case 'permission-denied':
-          errorMessage.value = e.message ?? 'Access denied.';
-          break;
-        case 'resource-exhausted':
-          errorMessage.value = e.message ?? 'Too many attempts. Please try again later.';
-          break;
-        default:
-          errorMessage.value = e.message ?? 'An error occurred. Please try again.';
-      }
-      return false;
     } catch (e) {
+      print('  - General Error: $e');
       errorMessage.value = e.toString();
       return false;
     } finally {

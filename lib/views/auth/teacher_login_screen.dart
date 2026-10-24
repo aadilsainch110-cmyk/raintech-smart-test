@@ -40,8 +40,10 @@ class _TeacherLoginScreenState extends State<TeacherLoginScreen> {
           password: _passwordController.text,
         );
       } else {
+        final code = _secretCodeController.text.trim().toUpperCase();
+        print('DEBUG: Teacher login with secret code: $code');
         success = await _authController.signInWithSecretCode(
-          secretCode: _secretCodeController.text.trim().toUpperCase(),
+          secretCode: code,
         );
       }
 

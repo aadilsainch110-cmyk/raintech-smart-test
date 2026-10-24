@@ -219,18 +219,18 @@ class _TeacherTestsScreenState extends State<TeacherTestsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(backgroundColor: Colors.blueAccent,
+      appBar: AppBar(
+        backgroundColor: Colors.blue,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),
         ),
         title: const Text(
           'My Tests',
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
         ),
         elevation: 0,
-
-        foregroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
       ),
       drawer: _buildNavigationDrawer(context),
       bottomNavigationBar: ResponsiveUtils.isMobile(context)

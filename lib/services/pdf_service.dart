@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -13,6 +15,11 @@ class PdfService {
   Future<void> generateResultPDF(ResultModel result) async {
     final pdf = pw.Document();
 
+    // Load logo image from assets
+    final logoImage = pw.MemoryImage(
+      (await rootBundle.load('assets/logo/logo.png')).buffer.asUint8List(),
+    );
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -27,23 +34,34 @@ class PdfService {
                   color: PdfColors.blue800,
                   borderRadius: pw.BorderRadius.circular(10),
                 ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.center,
                   children: [
-                    pw.Text(
-                      'RAINTECH',
-                      style: pw.TextStyle(
-                        fontSize: 32,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.white,
-                      ),
+                    pw.Image(
+                      logoImage,
+                      width: 50,
+                      height: 50,
                     ),
-                    pw.SizedBox(height: 8),
-                    pw.Text(
-                      'Online Testing System',
-                      style: pw.TextStyle(fontSize: 16, color: PdfColors.white),
+                    pw.SizedBox(width: 12),
+                    pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          'RAINTECH',
+                          style: pw.TextStyle(
+                            fontSize: 32,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.white,
+                          ),
+                        ),
+                        pw.SizedBox(height: 4),
+                        pw.Text(
+                          'Online Testing System',
+                          style: pw.TextStyle(fontSize: 16, color: PdfColors.white),
+                        ),
+                      ],
                     ),
-                    pw.SizedBox(height: 16),
+                    pw.SizedBox(width: 12),
                     pw.Text(
                       'RESULT',
                       style: pw.TextStyle(
@@ -326,6 +344,34 @@ class PdfService {
   }) async {
     final pdf = pw.Document();
 
+    // Calculate assessment details
+    final totalAttempted = result.correctAnswers + result.wrongAnswers;
+    final accuracy = totalAttempted > 0
+        ? ((result.correctAnswers / totalAttempted) * 100).toStringAsFixed(1)
+        : '0.0';
+
+    // Debug logging - verify actual result data
+    debugPrint('=== DEBUG: generateMarksheet ===');
+    debugPrint('result.testId: ${result.testId}');
+    debugPrint('result.studentId: ${result.studentId}');
+    debugPrint('result.obtainedMarks: ${result.obtainedMarks}');
+    debugPrint('result.totalMarks: ${result.totalMarks}');
+    debugPrint('result.percentage: ${result.percentage}');
+    debugPrint('result.status: ${result.status}');
+    debugPrint('result.correctAnswers: ${result.correctAnswers}');
+    debugPrint('result.wrongAnswers: ${result.wrongAnswers}');
+    debugPrint('result.getGrade(): ${result.getGrade()}');
+    debugPrint('result.showPosition: ${result.showPosition}');
+    debugPrint('result.position: ${result.position}');
+    debugPrint('result.getPositionDisplay(): ${result.getPositionDisplay()}');
+    debugPrint('result.submittedAt: ${result.submittedAt}');
+    debugPrint('==============================');
+
+    // Load logo image from assets
+    final logoImage = pw.MemoryImage(
+      (await rootBundle.load('assets/logo/logo.png')).buffer.asUint8List(),
+    );
+
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
@@ -344,24 +390,34 @@ class PdfService {
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    pw.Row(
                       children: [
-                        pw.Text(
-                          'RAINTECH',
-                          style: pw.TextStyle(
-                            fontSize: 36,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.white,
-                          ),
+                        pw.Image(
+                          logoImage,
+                          width: 60,
+                          height: 60,
                         ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          'Smart Test',
-                          style: pw.TextStyle(
-                            fontSize: 18,
-                            color: PdfColors.white,
-                          ),
+                        pw.SizedBox(width: 16),
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              'RAINTECH',
+                              style: pw.TextStyle(
+                                fontSize: 36,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                            pw.SizedBox(height: 4),
+                            pw.Text(
+                              'Smart Test',
+                              style: pw.TextStyle(
+                                fontSize: 18,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -611,6 +667,44 @@ class PdfService {
               ),
               pw.SizedBox(height: 20),
 
+              // Assessment Details Card
+              pw.Container(
+                padding: const pw.EdgeInsets.all(20),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey300, width: 2),
+                  borderRadius: pw.BorderRadius.circular(12),
+                ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'Assessment Details',
+                      style: pw.TextStyle(
+                        fontSize: 20,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blue800,
+                      ),
+                    ),
+                    pw.SizedBox(height: 16),
+                    _buildInfoRow('Total Questions Attempted', '${result.correctAnswers + result.wrongAnswers}'),
+                    pw.SizedBox(height: 8),
+                    _buildInfoRow('Correct Answers', '${result.correctAnswers}'),
+                    pw.SizedBox(height: 8),
+                    _buildInfoRow('Wrong Answers', '${result.wrongAnswers}'),
+                    pw.SizedBox(height: 8),
+                    _buildInfoRow('Accuracy', '$accuracy%'),
+                    pw.SizedBox(height: 8),
+                    _buildInfoRow(
+                      'Submission Date',
+                      result.submittedAt != null
+                          ? DateFormat('dd MMM yyyy, hh:mm a').format(result.submittedAt!)
+                          : 'N/A',
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(height: 20),
+
               // Footer
               pw.Container(
                 padding: const pw.EdgeInsets.all(16),
@@ -718,6 +812,11 @@ class PdfService {
   }) async {
     final pdf = pw.Document();
 
+    // Load logo image from assets
+    final logoImage = pw.MemoryImage(
+      (await rootBundle.load('assets/logo/logo.png')).buffer.asUint8List(),
+    );
+
     for (int i = 0; i < results.length; i++) {
       final result = results[i];
       final student = students
@@ -743,24 +842,34 @@ class PdfService {
                     child: pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        pw.Row(
                           children: [
-                            pw.Text(
-                              'RAINTECH',
-                              style: pw.TextStyle(
-                                fontSize: 36,
-                                fontWeight: pw.FontWeight.bold,
-                                color: PdfColors.white,
-                              ),
+                            pw.Image(
+                              logoImage,
+                              width: 60,
+                              height: 60,
                             ),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              'Smart Test',
-                              style: pw.TextStyle(
-                                fontSize: 18,
-                                color: PdfColors.white,
-                              ),
+                            pw.SizedBox(width: 16),
+                            pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  'RAINTECH',
+                                  style: pw.TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: pw.FontWeight.bold,
+                                    color: PdfColors.white,
+                                  ),
+                                ),
+                                pw.SizedBox(height: 4),
+                                pw.Text(
+                                  'Smart Test',
+                                  style: pw.TextStyle(
+                                    fontSize: 18,
+                                    color: PdfColors.white,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -1058,6 +1167,11 @@ class PdfService {
   }) async {
     final pdf = pw.Document();
 
+    // Load logo image from assets
+    final logoImage = pw.MemoryImage(
+      (await rootBundle.load('assets/logo/logo.png')).buffer.asUint8List(),
+    );
+
     // Calculate statistics
     final totalStudents = results.length;
     final passedStudents = results.where((r) => r.status == 'PASS').length;
@@ -1096,24 +1210,34 @@ class PdfService {
                 child: pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    pw.Row(
                       children: [
-                        pw.Text(
-                          'RAINTECH',
-                          style: pw.TextStyle(
-                            fontSize: 32,
-                            fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.white,
-                          ),
+                        pw.Image(
+                          logoImage,
+                          width: 50,
+                          height: 50,
                         ),
-                        pw.SizedBox(height: 4),
-                        pw.Text(
-                          'Smart Test - Professional Result Sheet',
-                          style: pw.TextStyle(
-                            fontSize: 16,
-                            color: PdfColors.white,
-                          ),
+                        pw.SizedBox(width: 12),
+                        pw.Column(
+                          crossAxisAlignment: pw.CrossAxisAlignment.start,
+                          children: [
+                            pw.Text(
+                              'RAINTECH',
+                              style: pw.TextStyle(
+                                fontSize: 32,
+                                fontWeight: pw.FontWeight.bold,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                            pw.SizedBox(height: 4),
+                            pw.Text(
+                              'Smart Test - Professional Result Sheet',
+                              style: pw.TextStyle(
+                                fontSize: 16,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1441,6 +1565,11 @@ class PdfService {
   }) async {
     final pdf = pw.Document();
 
+    // Load logo image from assets
+    final logoImage = pw.MemoryImage(
+      (await rootBundle.load('assets/logo/logo.png')).buffer.asUint8List(),
+    );
+
     // Calculate statistics
     final totalStudents = resultsData.length;
     final passedStudents = resultsData.where((r) => (r['result'] as ResultModel).status == 'PASS').length;
@@ -1491,24 +1620,34 @@ class PdfService {
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      pw.Row(
                         children: [
-                          pw.Text(
-                            'RAINTECH',
-                            style: pw.TextStyle(
-                              fontSize: 32,
-                              fontWeight: pw.FontWeight.bold,
-                              color: PdfColors.white,
-                            ),
+                          pw.Image(
+                            logoImage,
+                            width: 50,
+                            height: 50,
                           ),
-                          pw.SizedBox(height: 4),
-                          pw.Text(
-                            'Smart Test - All Students Results',
-                            style: pw.TextStyle(
-                              fontSize: 16,
-                              color: PdfColors.white,
-                            ),
+                          pw.SizedBox(width: 12),
+                          pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'RAINTECH',
+                                style: pw.TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.white,
+                                ),
+                              ),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                'Smart Test - All Students Results',
+                                style: pw.TextStyle(
+                                  fontSize: 16,
+                                  color: PdfColors.white,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
