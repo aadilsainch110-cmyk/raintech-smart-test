@@ -398,6 +398,30 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         SizedBox(
           height: ResponsiveUtils.responsiveSpacing(
             context,
+            12,
+          ),
+        ),
+
+        SizedBox(
+          width: double.infinity,
+          height: buttonHeight,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Get.toNamed('/about');
+            },
+            icon: const Icon(Icons.info_outline),
+            label: const Text('About Us'),
+            style: OutlinedButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(radius),
+              ),
+            ),
+          ),
+        ),
+
+        SizedBox(
+          height: ResponsiveUtils.responsiveSpacing(
+            context,
             24,
           ),
         ),

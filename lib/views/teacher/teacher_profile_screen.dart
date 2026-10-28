@@ -91,6 +91,19 @@ class TeacherProfileScreen extends StatelessWidget {
                     ),
                     SizedBox(
                       width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Get.toNamed('/about');
+                        },
+                        icon: const Icon(Icons.info_outline),
+                        label: const Text('About Us'),
+                      ),
+                    ),
+                    SizedBox(
+                      height: ResponsiveUtils.responsiveSpacing(context, 16),
+                    ),
+                    SizedBox(
+                      width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: () {
                           _showLogoutConfirmation(context, authController);

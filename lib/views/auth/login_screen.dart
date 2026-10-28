@@ -519,6 +519,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
+                    SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 32)),
+
+                    // Developer Credits Footer
+                    Column(
+                      children: [
+                        Text(
+                          'Developed by',
+                          style: TextStyle(
+                            color: theme.AppTheme.textSecondary.withValues(alpha: 0.7),
+                            fontSize: 12,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 4)),
+                        Text(
+                          'Aadil Ali & Abdul Rehman',
+                          style: TextStyle(
+                            color: theme.AppTheme.primaryColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),

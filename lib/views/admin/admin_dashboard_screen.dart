@@ -6,10 +6,10 @@ import '../../controllers/course_controller.dart';
 import '../../controllers/test_controller.dart';
 import '../../controllers/student_controller.dart';
 import '../../controllers/teacher_controller.dart';
+import '../../controllers/result_controller.dart';
 import '../../app/theme/app_theme.dart';
 import '../../app/responsive/responsive_utils.dart';
 import '../../app/responsive/adaptive_navigation.dart';
-import '../../app/routes/app_routes.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -25,6 +25,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   final TestController _testController = Get.put(TestController());
   final StudentController _studentController = Get.put(StudentController());
   final TeacherController _teacherController = Get.put(TeacherController());
+  final ResultController _resultController = Get.put(ResultController());
 
   final Set<int> _expandedItems = <int>{};
 
@@ -41,6 +42,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       _testController.fetchAllTests(),
       _studentController.fetchAllStudents(),
       _teacherController.fetchAllTeachers(),
+      _resultController.fetchAllResults(),
     ]);
   }
 
@@ -117,7 +119,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 physics: const NeverScrollableScrollPhysics(),
                 mainAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
                 crossAxisSpacing: ResponsiveUtils.responsiveSpacing(context, 12),
-                childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.0 : 1.1,
+                childAspectRatio: ResponsiveUtils.isMobile(context) ? 1.2 : 1.4,
                 children: [
                   Obx(() => _buildStatCard(
                     'Users',
@@ -146,6 +148,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Icons.class_,
                     AppTheme.accentColor,
                     onTap: () => Get.toNamed('/classes-management'),
+                  )),
+                  Obx(() => _buildStatCard(
+                    'Results',
+                    _resultController.results.length.toString(),
+                    Icons.assessment,
+                    Colors.purple,
+                    onTap: () => Get.toNamed('/admin-student-results'),
                   )),
                 ],
               ),
@@ -192,6 +201,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 'Enrollment Approvals',
                 Icons.approval,
                 () => Get.toNamed('/enrollment-approval'),
+              ),
+              SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 12)),
+              _buildManagementCard(
+                'Student Results',
+                Icons.assessment_outlined,
+                () => Get.toNamed('/admin-student-results'),
               ),
               SizedBox(height: ResponsiveUtils.responsiveSpacing(context, 24)),
               Text(
@@ -293,6 +308,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             _buildDrawerItem(Icons.class_, 'Classes', 3),
             _buildDrawerItem(Icons.quiz, 'Tests', 4),
             _buildDrawerItem(Icons.access_time, 'Shifts', 5),
+            _buildDrawerItem(Icons.assessment_outlined, 'Student Results', 6),
             const Divider(color: Colors.white24),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.white),
@@ -336,6 +352,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             break;
           case 5:
             Get.toNamed('/shifts-management');
+            break;
+          case 6:
+            Get.toNamed('/admin-student-results');
             break;
         }
       },
@@ -471,6 +490,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           selectedIcon: Icon(Icons.access_time),
           label: 'Shifts',
         ),
+        NavigationDestination(
+          icon: Icon(Icons.assessment_outlined),
+          selectedIcon: Icon(Icons.assessment),
+          label: 'Results',
+        ),
       ],
       onDestinationSelected: (index) {
         switch (index) {
@@ -490,6 +514,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             break;
           case 5:
             Get.toNamed('/shifts-management');
+            break;
+          case 6:
+            Get.toNamed('/admin-student-results');
             break;
         }
       },
@@ -870,8 +897,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       onPressed: () async {
                         final confirmed = await Get.dialog<bool>(
                           AlertDialog(
-                            title: const Text('Delete Teacher'),
-                            content: Text('Delete ${teacher.name}? This action cannot be undone.'),
+                            title: const Text('Delete Teacher Permanently'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Are you sure you want to permanently delete ${teacher.name}?'),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'This action will:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text('• Delete their Firebase Authentication account'),
+                                const Text('• Delete their profile from Firestore'),
+                                const Text('• Delete all their enrollments'),
+                                const Text('• Delete all their test attempts and results'),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'This action CANNOT be undone.',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Get.back(result: false),
@@ -882,22 +933,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.errorColor,
                                 ),
-                                child: const Text('Delete'),
+                                child: const Text('Delete Permanently'),
                               ),
                             ],
                           ),
                         );
                         if (confirmed == true) {
-                          final success = await _adminController.updateUser(
+                          print('=== DEBUG: Deleting teacher ===');
+                          print('  - Teacher ID: ${teacher.id}');
+                          print('  - Teacher Name: ${teacher.name}');
+                          
+                          final success = await _adminController.deleteUserPermanently(
                             userId: teacher.id!,
-                            isActive: false,
+                            userName: teacher.name,
+                            userRole: 'teacher',
                           );
+                          
+                          print('  - Deletion result: $success');
+                          print('  - Error message: ${_adminController.errorMessage.value}');
+                          
                           if (success) {
                             Get.snackbar(
                               'Success',
-                              'Teacher Deleted Successfully',
+                              'Teacher deleted permanently',
                               snackPosition: SnackPosition.BOTTOM,
                               backgroundColor: AppTheme.successColor,
+                              colorText: Colors.white,
+                            );
+                            await _loadData();
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              _adminController.errorMessage.value,
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppTheme.errorColor,
                               colorText: Colors.white,
                             );
                           }
@@ -967,8 +1036,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       onPressed: () async {
                         final confirmed = await Get.dialog<bool>(
                           AlertDialog(
-                            title: const Text('Delete Student'),
-                            content: Text('Delete ${student.name}? This action cannot be undone.'),
+                            title: const Text('Delete Student Permanently'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Are you sure you want to permanently delete ${student.name}?'),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'This action will:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text('• Delete their Firebase Authentication account'),
+                                const Text('• Delete their profile from Firestore'),
+                                const Text('• Delete all their enrollments'),
+                                const Text('• Delete all their test attempts and results'),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'This action CANNOT be undone.',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
                             actions: [
                               TextButton(
                                 onPressed: () => Get.back(result: false),
@@ -979,22 +1072,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppTheme.errorColor,
                                 ),
-                                child: const Text('Delete'),
+                                child: const Text('Delete Permanently'),
                               ),
                             ],
                           ),
                         );
                         if (confirmed == true) {
-                          final success = await _adminController.updateUser(
+                          print('=== DEBUG: Deleting student ===');
+                          print('  - Student ID: ${student.id}');
+                          print('  - Student Name: ${student.name}');
+                          
+                          final success = await _adminController.deleteUserPermanently(
                             userId: student.id!,
-                            isActive: false,
+                            userName: student.name,
+                            userRole: 'student',
                           );
+                          
+                          print('  - Deletion result: $success');
+                          print('  - Error message: ${_adminController.errorMessage.value}');
+                          
                           if (success) {
                             Get.snackbar(
                               'Success',
-                              'Student Deleted Successfully',
+                              'Student deleted permanently',
                               snackPosition: SnackPosition.BOTTOM,
                               backgroundColor: AppTheme.successColor,
+                              colorText: Colors.white,
+                            );
+                            await _loadData();
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              _adminController.errorMessage.value,
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: AppTheme.errorColor,
                               colorText: Colors.white,
                             );
                           }

@@ -33,9 +33,11 @@ import '../../views/admin/courses_management_screen.dart';
 import '../../views/admin/classes_management_screen.dart';
 import '../../views/admin/shifts_management_screen.dart';
 import '../../views/admin/enrollment_approval_screen.dart';
+import '../../views/admin/admin_student_results_screen.dart';
 import '../../views/settings/settings_screen.dart';
 import '../../views/settings/change_password_screen.dart';
 import '../../views/help/help_screen.dart';
+import '../../views/about/about_screen.dart';
 
 part 'app_routes.g.dart';
 
@@ -129,7 +131,12 @@ class AppPages {
       name: '/enrollment-approval',
       page: () => const EnrollmentApprovalScreen(),
     ),
+    GetPage(
+      name: '/admin-student-results',
+      page: () => const AdminStudentResultsScreen(),
+    ),
     GetPage(name: '/settings', page: () => const SettingsScreen()),
     GetPage(name: '/help', page: () => const HelpScreen()),
+    GetPage(name: '/about', page: () => const AboutScreen()),
   ];
 }

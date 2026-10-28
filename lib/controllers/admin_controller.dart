@@ -3,6 +3,7 @@ import '../models/user_model.dart';
 import '../models/class_model.dart';
 import '../models/shift_model.dart';
 import '../services/firestore_service.dart';
+import '../controllers/auth_controller.dart';
 
 // ignore_for_file: use_null_aware_elements
 
@@ -418,6 +419,136 @@ class AdminController extends GetxController {
       return users.firstWhere((user) => user.id == userId);
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<bool> deleteUserPermanently({
+    required String userId,
+    required String userName,
+    required String userRole,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      print('=== DEBUG: deleteUserPermanently START ===');
+      print('  - User ID: $userId');
+      print('  - User Name: $userName');
+      print('  - User Role: $userRole');
+
+      final authController = Get.find<AuthController>();
+      final currentAdminId = authController.currentUser?.id;
+
+      print('  - Current Admin ID: $currentAdminId');
+
+      if (currentAdminId == null) {
+        print('  - ERROR: Admin not authenticated');
+        errorMessage.value = 'Admin not authenticated';
+        return false;
+      }
+
+      // Prevent self-deletion
+      if (userId == currentAdminId) {
+        print('  - ERROR: Cannot delete own account');
+        errorMessage.value = 'You cannot delete your own account';
+        return false;
+      }
+
+      // Check if it's an admin account
+      final userDoc = await _firestoreService.getDocument(
+        collectionPath: 'users',
+        documentId: userId,
+      );
+      final userData = userDoc.data() as Map<String, dynamic>;
+      if (userData['role'] == 'admin') {
+        print('  - ERROR: Cannot delete admin account');
+        errorMessage.value = 'Cannot delete admin accounts';
+        return false;
+      }
+
+      // For teachers, check if they own any tests
+      if (userRole == 'teacher') {
+        final testsQuery = _firestoreService.queryWhereEqualTo(
+          collectionPath: 'tests',
+          field: 'teacherId',
+          value: userId,
+        );
+        final testsSnapshot = await testsQuery.get();
+        if (testsSnapshot.docs.isNotEmpty) {
+          print('  - ERROR: Teacher has ${testsSnapshot.docs.length} test(s)');
+          errorMessage.value = 'Cannot delete teacher with ${testsSnapshot.docs.length} test(s). Please reassign or delete tests first.';
+          return false;
+        }
+      }
+
+      print('  - Deleting Firestore records...');
+
+      // Delete related records based on role
+      if (userRole == 'student') {
+        // Delete enrollments
+        final enrollmentsQuery = _firestoreService.queryWhereEqualTo(
+          collectionPath: 'enrollments',
+          field: 'studentId',
+          value: userId,
+        );
+        final enrollmentsSnapshot = await enrollmentsQuery.get();
+        for (var doc in enrollmentsSnapshot.docs) {
+          await _firestoreService.deleteDocument(
+            collectionPath: 'enrollments',
+            documentId: doc.id,
+          );
+        }
+        print('  - Deleted ${enrollmentsSnapshot.docs.length} enrollment(s)');
+
+        // Delete test attempts
+        final attemptsQuery = _firestoreService.queryWhereEqualTo(
+          collectionPath: 'attempts',
+          field: 'studentId',
+          value: userId,
+        );
+        final attemptsSnapshot = await attemptsQuery.get();
+        for (var doc in attemptsSnapshot.docs) {
+          await _firestoreService.deleteDocument(
+            collectionPath: 'attempts',
+            documentId: doc.id,
+          );
+        }
+        print('  - Deleted ${attemptsSnapshot.docs.length} attempt(s)');
+
+        // Delete results
+        final resultsQuery = _firestoreService.queryWhereEqualTo(
+          collectionPath: 'results',
+          field: 'studentId',
+          value: userId,
+        );
+        final resultsSnapshot = await resultsQuery.get();
+        for (var doc in resultsSnapshot.docs) {
+          await _firestoreService.deleteDocument(
+            collectionPath: 'results',
+            documentId: doc.id,
+          );
+        }
+        print('  - Deleted ${resultsSnapshot.docs.length} result(s)');
+      }
+
+      // Delete the user document
+      await _firestoreService.deleteDocument(
+        collectionPath: 'users',
+        documentId: userId,
+      );
+      print('  - Deleted user document');
+
+      print('  - SUCCESS: User deleted successfully');
+      // Refresh user list after successful deletion
+      await fetchAllUsers();
+      return true;
+    } catch (e) {
+      print('  - General Error: $e');
+      errorMessage.value = e.toString();
+      return false;
+    } finally {
+      isLoading.value = false;
+      print('=== DEBUG: deleteUserPermanently END ===');
     }
   }
 }

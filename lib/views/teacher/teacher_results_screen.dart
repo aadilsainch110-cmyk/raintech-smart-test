@@ -65,6 +65,59 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
     ]);
   }
 
+  Future<void> _downloadRainTECHPDF(TestModel test) async {
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      // Fetch results for this test
+      await _resultController.fetchTestResults(testId: test.id!);
+
+      final course = _courseController.courses.firstWhereOrNull(
+        (c) => c.id == test.courseId,
+      );
+      final shift = _shiftController.shifts.firstWhereOrNull(
+        (s) => s.id == test.shiftId,
+      );
+
+      await _pdfService.generateTestResultPDF(
+        testId: test.id!,
+        testName: test.title,
+        courseName: course?.name ?? 'N/A',
+        shiftName: shift?.name ?? 'N/A',
+        testDate: test.createdAt ?? DateTime.now(),
+        totalMarks: test.totalMarks,
+        passingMarks: test.passingMarks,
+        results: _resultController.results.toList(),
+        students: _studentController.students.toList(),
+      );
+
+      Get.back();
+
+      Get.snackbar(
+        'Success',
+        'PDF downloaded successfully',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
+    } catch (e) {
+      if (Get.isDialogOpen == true) {
+        Get.back();
+      }
+
+      Get.snackbar(
+        'Error',
+        'Failed to download PDF: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppTheme.errorColor,
+        colorText: Colors.white,
+      );
+    }
+  }
+
   List<TestModel> get _filteredTests {
     var tests = _testController.tests.toList();
 
@@ -178,6 +231,12 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
                                             fontSize: 10,
                                           ),
                                         ),
+                                      const SizedBox(width: 8),
+                                      IconButton(
+                                        icon: const Icon(Icons.download, color: Colors.blue),
+                                        onPressed: () => _downloadRainTECHPDF(test),
+                                        tooltip: 'Download PDF',
+                                      ),
                                       const SizedBox(width: 8),
                                       const Icon(Icons.arrow_forward_ios, size: 16),
                                     ],
@@ -302,7 +361,7 @@ class _TeacherResultsScreenState extends State<TeacherResultsScreen> {
         ),
         const SizedBox(height: 4),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,

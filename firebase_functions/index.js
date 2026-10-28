@@ -178,3 +178,148 @@ exports.cleanupRateLimits = functions.pubsub
     await batch.commit();
     console.log('Cleaned up rate limits');
   });
+
+/**
+ * Permanently delete a user account
+ * This function deletes the user from Firebase Authentication and Firestore,
+ * along with all related records
+ */
+exports.deleteUserPermanently = functions.https.onCall(async (data, context) => {
+  const { userId, requesterId } = data;
+
+  // Validate input
+  if (!userId || typeof userId !== 'string') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'User ID is required'
+    );
+  }
+
+  if (!requesterId || typeof requesterId !== 'string') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Requester ID is required'
+    );
+  }
+
+  // Prevent self-deletion
+  if (userId === requesterId) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'You cannot delete your own account'
+    );
+  }
+
+  try {
+    // Verify requester is an admin
+    const requesterDoc = await db.collection('users').doc(requesterId).get();
+    if (!requesterDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'Requester not found'
+      );
+    }
+
+    const requesterData = requesterDoc.data();
+    if (requesterData.role !== 'admin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Only admins can delete users'
+      );
+    }
+
+    // Get the user to delete
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError(
+        'not-found',
+        'User not found'
+      );
+    }
+
+    const userData = userDoc.data();
+    const userRole = userData.role;
+
+    // Check if it's an admin account
+    if (userRole === 'admin') {
+      throw new functions.https.HttpsError(
+        'permission-denied',
+        'Cannot delete admin accounts'
+      );
+    }
+
+    // For teachers, check if they own any tests
+    if (userRole === 'teacher') {
+      const testsSnapshot = await db.collection('tests')
+        .where('teacherId', '==', userId)
+        .get();
+
+      if (!testsSnapshot.empty) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          `Cannot delete teacher with ${testsSnapshot.size} test(s). Please reassign or delete tests first.`
+        );
+      }
+    }
+
+    // Start a batch for Firestore deletions
+    const batch = db.batch();
+
+    // Delete related records based on role
+    if (userRole === 'student') {
+      // Delete enrollments
+      const enrollmentsSnapshot = await db.collection('enrollments')
+        .where('studentId', '==', userId)
+        .get();
+      enrollmentsSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      // Delete test attempts
+      const attemptsSnapshot = await db.collection('attempts')
+        .where('studentId', '==', userId)
+        .get();
+      attemptsSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      // Delete results
+      const resultsSnapshot = await db.collection('results')
+        .where('studentId', '==', userId)
+        .get();
+      resultsSnapshot.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+    } else if (userRole === 'teacher') {
+      // Teacher might have related records, but tests are already checked above
+      // Delete any attempts or results where teacher is referenced if needed
+    }
+
+    // Delete the user document
+    batch.delete(userDoc.ref);
+
+    // Commit Firestore deletions
+    await batch.commit();
+
+    // Delete Firebase Authentication account
+    try {
+      await admin.auth().deleteUser(userId);
+      console.log(`Deleted Firebase Auth account for user: ${userId}`);
+    } catch (authError) {
+      console.error(`Failed to delete Firebase Auth account: ${authError.message}`);
+      // Continue even if auth deletion fails, user is already deleted from Firestore
+    }
+
+    return {
+      success: true,
+      message: `User ${userData.name} (${userRole}) deleted permanently`
+    };
+
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      error.message || 'Failed to delete user'
+    );
+  }
+});

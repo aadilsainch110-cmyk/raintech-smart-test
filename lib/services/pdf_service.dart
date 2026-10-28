@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:intl/intl.dart';
+import 'package:collection/collection.dart';
 import '../models/result_model.dart';
 import '../models/user_model.dart';
 import '../models/test_model.dart';
@@ -373,71 +374,716 @@ class PdfService {
     );
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(20),
         build: (pw.Context context) {
+          return [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                // Header with Logo and Title
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(24),
+                  decoration: pw.BoxDecoration(
+                    color: PdfColors.blue800,
+                    borderRadius: pw.BorderRadius.circular(12),
+                  ),
+                  child: pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Row(
+                        children: [
+                          pw.Image(
+                            logoImage,
+                            width: 60,
+                            height: 60,
+                          ),
+                          pw.SizedBox(width: 16),
+                          pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.start,
+                            children: [
+                              pw.Text(
+                                'RAINTECH',
+                                style: pw.TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: pw.FontWeight.bold,
+                                  color: PdfColors.white,
+                                ),
+                              ),
+                              pw.SizedBox(height: 4),
+                              pw.Text(
+                                'Smart Test',
+                                style: pw.TextStyle(
+                                  fontSize: 18,
+                                  color: PdfColors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.end,
+                        children: [
+                          pw.Text(
+                            'MARKSHEET',
+                            style: pw.TextStyle(
+                              fontSize: 28,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.white,
+                            ),
+                          ),
+                          pw.SizedBox(height: 4),
+                          pw.Text(
+                            DateFormat('dd MMM yyyy').format(DateTime.now()),
+                            style: pw.TextStyle(
+                              fontSize: 14,
+                              color: PdfColors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 24),
+
+                // Student Information Card
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(20),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey300, width: 2),
+                    borderRadius: pw.BorderRadius.circular(12),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Student Information',
+                        style: pw.TextStyle(
+                          fontSize: 20,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
+                      pw.SizedBox(height: 16),
+                      pw.Row(
+                        children: [
+                          pw.Expanded(
+                            child: _buildInfoRow('Name', student.name),
+                          ),
+                          pw.SizedBox(width: 16),
+                          pw.Expanded(
+                            child: _buildInfoRow('Email', student.email),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 12),
+                      pw.Row(
+                        children: [
+                          pw.Expanded(
+                            child: _buildInfoRow('Student ID', student.studentId ?? 'N/A'),
+                          ),
+                          pw.SizedBox(width: 16),
+                          pw.Expanded(
+                            child: _buildInfoRow('Phone', student.phone ?? 'N/A'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+
+                // Test Information Card
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(20),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey300, width: 2),
+                    borderRadius: pw.BorderRadius.circular(12),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Test Information',
+                        style: pw.TextStyle(
+                          fontSize: 20,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
+                      pw.SizedBox(height: 16),
+                      _buildInfoRow('Test Name', test.title),
+                      pw.SizedBox(height: 12),
+                      _buildInfoRow('Course', course?.name ?? 'N/A'),
+                      pw.SizedBox(height: 12),
+                      _buildInfoRow('Duration', '${test.durationMinutes} minutes'),
+                      pw.SizedBox(height: 12),
+                      _buildInfoRow(
+                        'Test Date',
+                        result.submittedAt != null
+                            ? DateFormat('dd MMM yyyy, hh:mm a').format(result.submittedAt!)
+                            : 'N/A',
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+
+                // Results Card
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(20),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey300, width: 2),
+                    borderRadius: pw.BorderRadius.circular(12),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Performance',
+                        style: pw.TextStyle(
+                          fontSize: 20,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
+                      pw.SizedBox(height: 20),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Obtained Marks',
+                              '${result.obtainedMarks}',
+                              PdfColors.blue100,
+                              PdfColors.blue800,
+                            ),
+                          ),
+                          pw.SizedBox(width: 16),
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Total Marks',
+                              '${result.totalMarks}',
+                              PdfColors.green100,
+                              PdfColors.green800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 16),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Percentage',
+                              '${result.percentage.toStringAsFixed(1)}%',
+                              PdfColors.orange100,
+                              PdfColors.orange800,
+                            ),
+                          ),
+                          pw.SizedBox(width: 16),
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Grade',
+                              result.getGrade(),
+                              result.getGrade() == 'A+' || result.getGrade() == 'A'
+                                  ? PdfColors.green100
+                                  : result.getGrade() == 'F'
+                                      ? PdfColors.red100
+                                      : PdfColors.yellow100,
+                              result.getGrade() == 'A+' || result.getGrade() == 'A'
+                                  ? PdfColors.green800
+                                  : result.getGrade() == 'F'
+                                      ? PdfColors.red800
+                                      : PdfColors.orange800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 16),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Status',
+                              result.status,
+                              result.status == 'PASS'
+                                  ? PdfColors.green100
+                                  : PdfColors.red100,
+                              result.status == 'PASS'
+                                  ? PdfColors.green800
+                                  : PdfColors.red800,
+                            ),
+                          ),
+                          pw.SizedBox(width: 16),
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Correct',
+                              '${result.correctAnswers}',
+                              PdfColors.green100,
+                              PdfColors.green800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 16),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                        children: [
+                          pw.Expanded(
+                            child: _buildResultCard(
+                              'Wrong',
+                              '${result.wrongAnswers}',
+                              PdfColors.red100,
+                              PdfColors.red800,
+                            ),
+                          ),
+                          pw.SizedBox(width: 16),
+                          if (result.showPosition && result.position != null)
+                            pw.Expanded(
+                              child: _buildResultCard(
+                                'Position',
+                                result.getPositionDisplay(),
+                                PdfColors.purple100,
+                                PdfColors.purple800,
+                              ),
+                            )
+                          else
+                            pw.Expanded(
+                              child: _buildResultCard(
+                                'Position',
+                                'N/A',
+                                PdfColors.grey200,
+                                PdfColors.grey600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+
+                // Assessment Details Card
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(20),
+                  decoration: pw.BoxDecoration(
+                    border: pw.Border.all(color: PdfColors.grey300, width: 2),
+                    borderRadius: pw.BorderRadius.circular(12),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Assessment Details',
+                        style: pw.TextStyle(
+                          fontSize: 20,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue800,
+                        ),
+                      ),
+                      pw.SizedBox(height: 16),
+                      _buildInfoRow('Total Questions Attempted', '${result.correctAnswers + result.wrongAnswers}'),
+                      pw.SizedBox(height: 8),
+                      _buildInfoRow('Correct Answers', '${result.correctAnswers}'),
+                      pw.SizedBox(height: 8),
+                      _buildInfoRow('Wrong Answers', '${result.wrongAnswers}'),
+                      pw.SizedBox(height: 8),
+                      _buildInfoRow('Accuracy', '$accuracy%'),
+                      pw.SizedBox(height: 8),
+                      _buildInfoRow(
+                        'Submission Date',
+                        result.submittedAt != null
+                            ? DateFormat('dd MMM yyyy, hh:mm a').format(result.submittedAt!)
+                            : 'N/A',
+                      ),
+                    ],
+                  ),
+                ),
+                pw.SizedBox(height: 20),
+
+                // Footer
+                pw.Container(
+                  padding: const pw.EdgeInsets.all(16),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.center,
+                    children: [
+                      pw.Text(
+                        'This is an electronically generated marksheet.',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                      pw.SizedBox(height: 8),
+                      pw.Text(
+                        'Generated on: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdf.save(),
+      name: 'marksheet_${student.name}_${test.title}.pdf',
+    );
+  }
+
+  Future<void> generateTestResultPDF({
+    required String testId,
+    required String testName,
+    required String courseName,
+    required String shiftName,
+    required DateTime testDate,
+    required int totalMarks,
+    required int passingMarks,
+    required List<ResultModel> results,
+    required List<UserModel> students,
+  }) async {
+    final pdf = pw.Document();
+
+    // Sort results by obtained marks (descending) for position calculation
+    final sortedResults = List<ResultModel>.from(results);
+    sortedResults.sort((a, b) => b.obtainedMarks.compareTo(a.obtainedMarks));
+
+    // Calculate positions
+    int currentPosition = 1;
+    for (int i = 0; i < sortedResults.length; i++) {
+      if (i > 0 && sortedResults[i].obtainedMarks < sortedResults[i - 1].obtainedMarks) {
+        currentPosition = i + 1;
+      }
+      sortedResults[i] = sortedResults[i].copyWith(position: currentPosition);
+    }
+
+    // Calculate statistics
+    final totalStudents = results.length;
+    final passedCount = results.where((r) => r.status == 'PASS').length;
+    final needImprovementCount = results.where((r) => r.status == 'FAIL').length;
+    final highestMarks = results.isEmpty ? 0 : results.map((r) => r.obtainedMarks).reduce((a, b) => a > b ? a : b);
+    final lowestMarks = results.isEmpty ? 0 : results.map((r) => r.obtainedMarks).reduce((a, b) => a < b ? a : b);
+    final average = results.isEmpty ? 0.0 : results.map((r) => r.percentage).reduce((a, b) => a + b) / results.length;
+
+    final monthYear = DateFormat('MMMM yyyy').format(testDate);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
           return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              // Header with Logo and Title
-              pw.Container(
-                padding: const pw.EdgeInsets.all(24),
-                decoration: pw.BoxDecoration(
+              // Institute Heading with Stars
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.center,
+                children: [
+                  pw.Text('★', style: pw.TextStyle(fontSize: 24, color: PdfColors.amber800)),
+                  pw.SizedBox(width: 10),
+                  pw.Text(
+                    'RAJIB ANMOL INSTITUTE OF TECHNOLOGY (RAINTECH)',
+                    style: pw.TextStyle(
+                      fontSize: 18,
+                      fontWeight: pw.FontWeight.bold,
+                      color: PdfColors.blue800,
+                    ),
+                  ),
+                  pw.SizedBox(width: 10),
+                  pw.Text('★', style: pw.TextStyle(fontSize: 24, color: PdfColors.amber800)),
+                ],
+              ),
+              pw.SizedBox(height: 20),
+
+              // Test Result Heading
+              pw.Text(
+                'TEST RESULT',
+                style: pw.TextStyle(
+                  fontSize: 22,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.black,
+                ),
+              ),
+              pw.SizedBox(height: 10),
+              pw.Text(
+                '$courseName - $shiftName',
+                style: pw.TextStyle(
+                  fontSize: 16,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 30),
+
+              // Test Info Row
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  pw.Column(
+                    children: [
+                      pw.Text(
+                        'Monthly Test',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                      pw.SizedBox(height: 5),
+                      pw.Text(
+                        testName,
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    children: [
+                      pw.Text(
+                        'Test Date',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                      pw.SizedBox(height: 5),
+                      pw.Text(
+                        DateFormat('dd MMM yyyy').format(testDate),
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    children: [
+                      pw.Text(
+                        'Shift',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                      pw.SizedBox(height: 5),
+                      pw.Text(
+                        shiftName,
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    children: [
+                      pw.Text(
+                        'Total Marks',
+                        style: pw.TextStyle(
+                          fontSize: 12,
+                          color: PdfColors.grey600,
+                        ),
+                      ),
+                      pw.SizedBox(height: 5),
+                      pw.Text(
+                        '$totalMarks',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 30),
+
+              // Results Table
+              pw.TableHelper.fromTextArray(
+                context: context,
+                data: [
+                  ['Position', 'Roll No', 'Student Name', 'Obtained', 'Total', 'Status'],
+                  ...sortedResults.map((result) {
+                    final student = students.firstWhereOrNull((s) => s.id == result.studentId);
+                    return [
+                      result.getPositionDisplay(),
+                      student?.studentId ?? 'N/A',
+                      student?.name ?? 'Unknown',
+                      '${result.obtainedMarks}',
+                      '${result.totalMarks}',
+                      result.status == 'PASS' ? 'Pass' : 'Need Improvement',
+                    ];
+                  }),
+                ],
+                headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.white,
+                ),
+                headerDecoration: pw.BoxDecoration(
                   color: PdfColors.blue800,
-                  borderRadius: pw.BorderRadius.circular(12),
+                ),
+                cellStyle: const pw.TextStyle(fontSize: 11),
+                cellAlignments: {
+                  0: pw.Alignment.center,
+                  1: pw.Alignment.center,
+                  2: pw.Alignment.centerLeft,
+                  3: pw.Alignment.center,
+                  4: pw.Alignment.center,
+                  5: pw.Alignment.center,
+                },
+                columnWidths: {
+                  0: const pw.FixedColumnWidth(50),
+                  1: const pw.FixedColumnWidth(60),
+                  2: const pw.FlexColumnWidth(2),
+                  3: const pw.FixedColumnWidth(50),
+                  4: const pw.FixedColumnWidth(40),
+                  5: const pw.FixedColumnWidth(70),
+                },
+                border: pw.TableBorder.all(color: PdfColors.grey400),
+                cellPadding: const pw.EdgeInsets.all(8),
+                rowDecoration: pw.BoxDecoration(
+                  color: PdfColors.white,
+                ),
+              ),
+              pw.SizedBox(height: 30),
+
+              // Summary Section
+              pw.Container(
+                padding: const pw.EdgeInsets.all(16),
+                decoration: pw.BoxDecoration(
+                  border: pw.Border.all(color: PdfColors.grey400),
+                  borderRadius: pw.BorderRadius.circular(8),
                 ),
                 child: pw.Row(
-                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
                   children: [
-                    pw.Row(
+                    pw.Column(
                       children: [
-                        pw.Image(
-                          logoImage,
-                          width: 60,
-                          height: 60,
+                        pw.Text(
+                          'Total Students',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey600,
+                          ),
                         ),
-                        pw.SizedBox(width: 16),
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text(
-                              'RAINTECH',
-                              style: pw.TextStyle(
-                                fontSize: 36,
-                                fontWeight: pw.FontWeight.bold,
-                                color: PdfColors.white,
-                              ),
-                            ),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              'Smart Test',
-                              style: pw.TextStyle(
-                                fontSize: 18,
-                                color: PdfColors.white,
-                              ),
-                            ),
-                          ],
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          '$totalStudents',
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                     pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.end,
                       children: [
                         pw.Text(
-                          'MARKSHEET',
+                          'Average',
                           style: pw.TextStyle(
-                            fontSize: 28,
+                            fontSize: 12,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          '${average.toStringAsFixed(1)}%',
+                          style: pw.TextStyle(
+                            fontSize: 16,
                             fontWeight: pw.FontWeight.bold,
-                            color: PdfColors.white,
                           ),
                         ),
-                        pw.SizedBox(height: 4),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
                         pw.Text(
-                          DateFormat('dd MMM yyyy').format(DateTime.now()),
+                          'Highest',
                           style: pw.TextStyle(
-                            fontSize: 14,
-                            color: PdfColors.white,
+                            fontSize: 12,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          '$highestMarks',
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.green800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Text(
+                          'Lowest',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          '$lowestMarks',
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.red800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Text(
+                          'Passed',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          '$passedCount',
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.green800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Text(
+                          'Need Improvement',
+                          style: pw.TextStyle(
+                            fontSize: 12,
+                            color: PdfColors.grey600,
+                          ),
+                        ),
+                        pw.SizedBox(height: 5),
+                        pw.Text(
+                          '$needImprovementCount',
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.red800,
                           ),
                         ),
                       ],
@@ -445,288 +1091,18 @@ class PdfService {
                   ],
                 ),
               ),
-              pw.SizedBox(height: 24),
-
-              // Student Information Card
-              pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 2),
-                  borderRadius: pw.BorderRadius.circular(12),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Student Information',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 16),
-                    pw.Row(
-                      children: [
-                        pw.Expanded(
-                          child: _buildInfoRow('Name', student.name),
-                        ),
-                        pw.SizedBox(width: 16),
-                        pw.Expanded(
-                          child: _buildInfoRow('Email', student.email),
-                        ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 12),
-                    pw.Row(
-                      children: [
-                        pw.Expanded(
-                          child: _buildInfoRow('Student ID', student.studentId ?? 'N/A'),
-                        ),
-                        pw.SizedBox(width: 16),
-                        pw.Expanded(
-                          child: _buildInfoRow('Phone', student.phone ?? 'N/A'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
-
-              // Test Information Card
-              pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 2),
-                  borderRadius: pw.BorderRadius.circular(12),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Test Information',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 16),
-                    _buildInfoRow('Test Name', test.title),
-                    pw.SizedBox(height: 12),
-                    _buildInfoRow('Course', course?.name ?? 'N/A'),
-                    pw.SizedBox(height: 12),
-                    _buildInfoRow('Duration', '${test.durationMinutes} minutes'),
-                    pw.SizedBox(height: 12),
-                    _buildInfoRow(
-                      'Test Date',
-                      result.submittedAt != null
-                          ? DateFormat('dd MMM yyyy, hh:mm a').format(result.submittedAt!)
-                          : 'N/A',
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
-
-              // Results Card
-              pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 2),
-                  borderRadius: pw.BorderRadius.circular(12),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Performance',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 20),
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Obtained Marks',
-                            '${result.obtainedMarks}',
-                            PdfColors.blue100,
-                            PdfColors.blue800,
-                          ),
-                        ),
-                        pw.SizedBox(width: 16),
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Total Marks',
-                            '${result.totalMarks}',
-                            PdfColors.green100,
-                            PdfColors.green800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 16),
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Percentage',
-                            '${result.percentage.toStringAsFixed(1)}%',
-                            PdfColors.orange100,
-                            PdfColors.orange800,
-                          ),
-                        ),
-                        pw.SizedBox(width: 16),
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Grade',
-                            result.getGrade(),
-                            result.getGrade() == 'A+' || result.getGrade() == 'A'
-                                ? PdfColors.green100
-                                : result.getGrade() == 'F'
-                                    ? PdfColors.red100
-                                    : PdfColors.yellow100,
-                            result.getGrade() == 'A+' || result.getGrade() == 'A'
-                                ? PdfColors.green800
-                                : result.getGrade() == 'F'
-                                    ? PdfColors.red800
-                                    : PdfColors.orange800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 16),
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Status',
-                            result.status,
-                            result.status == 'PASS'
-                                ? PdfColors.green100
-                                : PdfColors.red100,
-                            result.status == 'PASS'
-                                ? PdfColors.green800
-                                : PdfColors.red800,
-                          ),
-                        ),
-                        pw.SizedBox(width: 16),
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Correct',
-                            '${result.correctAnswers}',
-                            PdfColors.green100,
-                            PdfColors.green800,
-                          ),
-                        ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 16),
-                    pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Expanded(
-                          child: _buildResultCard(
-                            'Wrong',
-                            '${result.wrongAnswers}',
-                            PdfColors.red100,
-                            PdfColors.red800,
-                          ),
-                        ),
-                        pw.SizedBox(width: 16),
-                        if (result.showPosition && result.position != null)
-                          pw.Expanded(
-                            child: _buildResultCard(
-                              'Position',
-                              result.getPositionDisplay(),
-                              PdfColors.purple100,
-                              PdfColors.purple800,
-                            ),
-                          )
-                        else
-                          pw.Expanded(
-                            child: _buildResultCard(
-                              'Position',
-                              'N/A',
-                              PdfColors.grey200,
-                              PdfColors.grey600,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
-
-              // Assessment Details Card
-              pw.Container(
-                padding: const pw.EdgeInsets.all(20),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.grey300, width: 2),
-                  borderRadius: pw.BorderRadius.circular(12),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      'Assessment Details',
-                      style: pw.TextStyle(
-                        fontSize: 20,
-                        fontWeight: pw.FontWeight.bold,
-                        color: PdfColors.blue800,
-                      ),
-                    ),
-                    pw.SizedBox(height: 16),
-                    _buildInfoRow('Total Questions Attempted', '${result.correctAnswers + result.wrongAnswers}'),
-                    pw.SizedBox(height: 8),
-                    _buildInfoRow('Correct Answers', '${result.correctAnswers}'),
-                    pw.SizedBox(height: 8),
-                    _buildInfoRow('Wrong Answers', '${result.wrongAnswers}'),
-                    pw.SizedBox(height: 8),
-                    _buildInfoRow('Accuracy', '$accuracy%'),
-                    pw.SizedBox(height: 8),
-                    _buildInfoRow(
-                      'Submission Date',
-                      result.submittedAt != null
-                          ? DateFormat('dd MMM yyyy, hh:mm a').format(result.submittedAt!)
-                          : 'N/A',
-                    ),
-                  ],
-                ),
-              ),
-              pw.SizedBox(height: 20),
+              pw.SizedBox(height: 30),
 
               // Footer
               pw.Container(
-                padding: const pw.EdgeInsets.all(16),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text(
-                      'This is an electronically generated marksheet.',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey600,
-                      ),
-                    ),
-                    pw.SizedBox(height: 8),
-                    pw.Text(
-                      'Generated on: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now())}',
-                      style: pw.TextStyle(
-                        fontSize: 12,
-                        color: PdfColors.grey600,
-                      ),
-                    ),
-                  ],
+                padding: const pw.EdgeInsets.symmetric(vertical: 10),
+                child: pw.Text(
+                  'Issued by Rajib Anmol Institute of Technology (RAINTECH) | Building the Digital Future | Monthly Test — $monthYear',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                  textAlign: pw.TextAlign.center,
                 ),
               ),
             ],
@@ -737,7 +1113,7 @@ class PdfService {
 
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdf.save(),
-      name: 'marksheet_${student.name}_${test.title}.pdf',
+      name: 'RAINTECH_${testName}_$monthYear.pdf',
     );
   }
 

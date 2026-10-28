@@ -66,9 +66,9 @@ class ResponsiveUtils {
     if (isMobile(context)) {
       return 2;
     } else if (isTablet(context)) {
-      return 4;
+      return 3;
     } else {
-      return 4;
+      return 3;
     }
   }
 
